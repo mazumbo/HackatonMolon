@@ -3,7 +3,7 @@ El LLM investiga i argumenta; el CODI calcula severitat, escalat obligatori i ap
 import json
 import time
 
-import anthropic
+from openai import OpenAI
 
 from . import config
 from .prompts import SYSTEM_PROMPT
@@ -114,24 +114,61 @@ def fallback_ticket(alert_id, error, trace, seconds, usage):
             "open_questions": [error], "triage_seconds": round(seconds, 1), "tool_trace": trace, "status": "open", "usage": usage}
 
 
+def _as_openai_tool(t):
+    return {"type": "function", "function": {"name": t["name"], "description": t.get("description", ""),
+                                             "parameters": t["input_schema"]}}
+
+
+def _args(raw):
+    try:
+        v = json.loads(raw or "{}")
+        return v if isinstance(v, dict) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _submit_from_text(text):
+    """Si el model respon amb el ticket en JSON dins del text (sense tool call), el recuperem."""
+    if not text or "{" not in text:
+        return None
+    try:
+        v = json.loads(text[text.index("{"):text.rindex("}") + 1])
+    except ValueError:
+        return None
+    v = v.get("arguments", v) if isinstance(v, dict) else None
+    return v if isinstance(v, dict) and "verdict" in v and "alert_ids" in v else None
+
+
 def triar(alert_id):
     t0, trace, inj_hits = time.time(), [], []
     usage = {"input_tokens": 0, "output_tokens": 0, "steps": 0}
     try:
         if not config.MODEL:
             raise RuntimeError("falta TRIAGE_MODEL (id del model)")
-        client = anthropic.Anthropic()
-        msgs = [{"role": "user", "content": f"Tria l'alerta {alert_id}. Comenca amb get_alert."}]
+        if not config.LLM_API_KEY:
+            raise RuntimeError("falta LLM_API_KEY (clau del LLM de l'equip)")
+        client = OpenAI(base_url=config.LLM_BASE_URL, api_key=config.LLM_API_KEY, timeout=config.LLM_TIMEOUT)
+        tools = [_as_openai_tool(t) for t in TOOLS + [SUBMIT]]
+        msgs = [{"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"Tria l'alerta {alert_id}. Comenca amb get_alert."}]
         nudged = False
         for _ in range(config.MAX_STEPS):
-            resp = client.messages.create(model=config.MODEL, max_tokens=4096, system=SYSTEM_PROMPT,
-                                          tools=TOOLS + [SUBMIT], messages=msgs)
-            usage["input_tokens"] += resp.usage.input_tokens
-            usage["output_tokens"] += resp.usage.output_tokens
+            resp = client.chat.completions.create(model=config.MODEL, max_tokens=4096, temperature=0,
+                                                  tools=tools, tool_choice="auto", messages=msgs)
+            if resp.usage:
+                usage["input_tokens"] += resp.usage.prompt_tokens or 0
+                usage["output_tokens"] += resp.usage.completion_tokens or 0
             usage["steps"] += 1
-            msgs.append({"role": "assistant", "content": resp.content})
-            calls = [b for b in resp.content if b.type == "tool_use"]
-            sub = next((c.input for c in calls if c.name == "submit_ticket"), None)
+            m = resp.choices[0].message
+            calls = list(m.tool_calls or [])
+            msgs.append({"role": "assistant", "content": m.content or "",
+                         **({"tool_calls": [{"id": c.id, "type": "function",
+                                             "function": {"name": c.function.name, "arguments": c.function.arguments or "{}"}}
+                                            for c in calls]} if calls else {})})
+            parsed = [(c, _args(c.function.arguments)) for c in calls]
+            sub = next((a for c, a in parsed if c.function.name == "submit_ticket" and a is not None), None)
+            if sub is None and not calls:
+                sub = _submit_from_text(m.content)  # alguns models oberts escriuen el JSON en text
             if sub is not None:
                 return build_ticket(sub, trace, time.time() - t0, usage, inj_hits)
             if not calls:
@@ -140,14 +177,19 @@ def triar(alert_id):
                 nudged = True
                 msgs.append({"role": "user", "content": "Acaba cridant submit_ticket amb la teva conclusio."})
                 continue
-            results = []
-            for c in calls:
-                r = call_tool(c.name, c.input)
-                txt = json.dumps(r, ensure_ascii=False)
-                inj_hits += [(c.name, e) for e in scan_injection(txt)]
-                trace.append({"tool": c.name, "args": c.input, "result": txt[:600]})
-                results.append({"type": "tool_result", "tool_use_id": c.id, "content": format_for_model(c.name, r)})
-            msgs.append({"role": "user", "content": results})
+            for c, args in parsed:
+                if args is None:
+                    content = json.dumps({"error": "arguments no son JSON valid; torna-ho a provar"})
+                    trace.append({"tool": c.function.name, "args": c.function.arguments, "result": content})
+                else:
+                    r = call_tool(c.function.name, args)
+                    txt = json.dumps(r, ensure_ascii=False)
+                    inj_hits += [(c.function.name, e) for e in scan_injection(txt)]
+                    trace.append({"tool": c.function.name, "args": args, "result": txt[:600]})
+                    content = format_for_model(c.function.name, r)
+                if not isinstance(content, str):
+                    content = json.dumps(content, ensure_ascii=False)
+                msgs.append({"role": "tool", "tool_call_id": c.id, "content": content})
         raise RuntimeError(f"maxim de {config.MAX_STEPS} passos sense conclusio")
     except Exception as e:  # triar no ha de llancar mai
         return fallback_ticket(alert_id, f"{type(e).__name__}: {e}", trace, time.time() - t0, usage)
