@@ -1,4 +1,4 @@
-# Evaluación, ensayo y plan B (rol D)
+# Evaluación y ensayo (rol D)
 
 Todo se ejecuta desde la raíz del repo con `DATASET_DIR` apuntando al repo del reto
 (en el PC de mazumbo: `..\DTT-UAB-The-Hack`, que es el valor por defecto).
@@ -35,16 +35,6 @@ UI_TICKETS=out/ensayo uvicorn server:app --app-dir ui --host 127.0.0.1 --port 80
 
 1. Bajar el fichero de las 10 alertas del GitHub del reto y guardarlo como `vivas.jsonl` (una alerta por línea).
 2. `python -m agent.run_batch --ids-file vivas.jsonl --out out/vivas`
-3. **Copia de seguridad inmediata** (plan B): `cp -r out/vivas ui/data/tickets_vivas` y subirla al repo.
-4. `UI_TICKETS=out/vivas uvicorn server:app --app-dir ui --host 127.0.0.1 --port 8080` y grabar.
+3. `UI_TICKETS=out/vivas uvicorn server:app --app-dir ui --host 127.0.0.1 --port 8080` y grabar.
 
-## 4. Plan B offline
-
-La UI no necesita red ni LLM: solo lee tickets de una carpeta. Si algo falla al grabar:
-
-| Falla | Qué hacemos |
-| --- | --- |
-| La pasarela UAB (`ornith`) cae o va lenta | Grabamos con los tickets ya generados (`ui/data/tickets_vivas`). Si no llegó a generar ninguno, el motor sigue cerrando el ruido sin LLM y lo contamos con honestidad. |
-| La API mock no arranca | El pipeline lee las alertas del fichero; el botón de aprobar no ejecuta, se dice en el vídeo. |
-| Sin red en la presentación | El vídeo ya está grabado; la UI con `ui/data/tickets_vivas` funciona en local. |
-| Sin tickets reales | `ui/data/tickets_mock.json` (12 incidentes escritos a mano), avisando de que es un ejemplo. |
+El plan B offline lo lleva otro compañero; esta carpeta no lo cubre.
