@@ -15,7 +15,7 @@ python -m agent.run_batch --ids-file eval/casos.jsonl --out out/eval --limit 40
 python -m eval.evaluar --tickets out/eval --salida eval/RESULTADOS.md
 ```
 
-Mide por incidente: veredicto (`true_positive`), severidad contra la política (9 critical y 3 high),
+Mide por incidente: veredicto (`true_positive`), severidad contra la política (10 critical y 2 high),
 escalado, cobertura de alertas, segundos y tokens. Marca aparte cualquier alerta de un incidente cerrada
 como no-ataque, que es el fallo grave, y comprueba que los benignos de control no se escalan.
 

@@ -24,9 +24,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MD = ROOT / "docs" / "incidentes_localizados.md"
 
-# Severidad esperada según politica_soc.md §2 (revisada el 07/11 con engine/severidad.py): 9 critical, 3 high.
+# Severidad esperada según politica_soc.md §2 (revisada el 07/11 con engine/severidad.py): 10 critical, 2 high (07/11: el 10 sube a critical por el login AiTM confirmado).
 ESPERADA = {1: "critical", 2: "critical", 3: "critical", 4: "critical", 5: "high", 6: "critical",
-            7: "critical", 8: "critical", 9: "critical", 10: "high", 11: "high", 12: "critical"}
+            7: "critical", 8: "critical", 9: "critical", 10: "critical", 11: "high", 12: "critical"}
 NOMBRE = {1: "BEC + AiTM (Laura Ferrer)", 2: "Ransomware en preparación (WS-BCN-1770)",
           3: "Cadena de suministro → AWS → CRM", 4: "Skimming TPV tienda 07", 5: "Logisoft + túnel DNS WMS01",
           6: "Fuga de datos empleada saliente", 7: "Password spraying Tor → svc_backup",
@@ -201,7 +201,9 @@ def evaluar_motor():
                  f"{len(set(g['alert_ids']) & ids) if g else 0}/{len(ids)} | "
                  f"{'✅' if sev == ESPERADA[n] else '❌'} {sev} ({ESPERADA[n]}) |")
     L += ["", f"**Severidad del motor igual a la política: {ok_sev}/12. "
-              f"Incidentes con alguna alerta cerrada por el prefiltro: {cerradas_tot}.**", ""]
+              f"Incidentes con alguna alerta cerrada por el prefiltro: {cerradas_tot}.**", "",
+          "El motor solo ve las alertas: el +1 por acceso confirmado que sale de los logs (p. ej. el login AiTM del "
+          "incidente 10) lo añade el agente, que sí los consulta.", ""]
     for k, v in ben.items():
         L.append(f"- Benigno de control {k}: " + ", ".join(
             f"{i} → {m.pref[i]['decision']} ({m.pref[i].get('veredicto') or '-'})" for i in v))

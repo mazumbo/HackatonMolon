@@ -3,7 +3,7 @@
 Estado vivo del equipo. **Actualizadlo en el mismo PR que cierra cada tarea**: mover la línea de "Por hacer" a "Hecho", con el PR o commit al lado.
 Leyenda: ✅ hecho · 🔄 en curso · ⏳ por hacer · ⛔ bloqueado. Plan completo en [`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md).
 
-_Última actualización: 07/11/2026 22:45_
+_Última actualización: 07/11/2026 23:20_
 
 ## Resumen
 
@@ -24,12 +24,13 @@ _Última actualización: 07/11/2026 22:45_
 
 ## Bloqueos y riesgos
 
-- ⛔ **Alertas nuevas que la API mock no conoce**: con las 10 alertas del domingo, `get_alert` dará 404. B lo arregla con un plan alternativo: si la API no tiene la alerta, se usa la que recibe el motor.
-- ⚠️ **Límite de tiempo sin fusionar**: el [PR #18](https://github.com/mazumbo/HackatonMolon/pull/18) resuelve la velocidad, pero sigue abierto.
-- ⚠️ **Sin ensayo general**: falta una pasada completa con 10 alertas (agente + UI) antes del domingo.
-- ⚠️ **Rol D sin hilo**: evaluación y guion del vídeo sin empezar. Es lo más urgente para el domingo.
-- ⚠️ **Sin plan B offline**: si falla la red o la pasarela durante la demo no hay resultados precalculados.
-- ℹ️ **Diferenciador creativo sin elegir**: falta decidir qué nos distingue en el pitch.
+- ✅ **Alertas nuevas que la API mock no conoce**: resuelto en el [PR #18](https://github.com/mazumbo/HackatonMolon/pull/18) (si la API da 404 se usa la alerta del motor). Probado con 10 alertas nuevas.
+- ⚠️ **Fusionar el [PR #18](https://github.com/mazumbo/HackatonMolon/pull/18)** (tiempo + 404) y el [PR #20](https://github.com/mazumbo/HackatonMolon/pull/20) (evaluación) antes del domingo.
+- ✅ **Ensayo con 10 alertas nuevas** con `ornith`: veredicto 7/7, todas por debajo de 60 s (`python -m eval.ensayo`). Falta repetirlo viéndolo en la UI.
+- ✅ **Evaluación de los 12 incidentes** con `ornith`: veredicto 12/12, cobertura 100 %, media 41 s y máximo 54 s (`python -m eval.evaluar`).
+- ⚠️ **Severidad del incidente 11 (Vela)**: el agente da critical y la política high (solo se filtraron códigos internos). B lo ajusta. El 10 pasa a critical (decidido 07/11).
+- 🔄 **Plan B offline**: lo prepara un compañero.
+- ✅ **Diferenciador: turno de noche.** Cifras en [`eval/TURNO_NOCHE.md`](../eval/TURNO_NOCHE.md): 8 de 12 incidentes con alertas clave fuera de horario; el ransomware espera 53,7 h (sáb 02:16 → lun 08:00).
 - ℹ️ La pasarela UAB solo ofrece el modelo `ornith` (`nemotron` no existe).
 
 ## Por rol
@@ -69,15 +70,13 @@ _Última actualización: 07/11/2026 22:45_
 - ⏳ Ensayo general con 10 alertas, de la entrada a la UI.
 - ⏳ Modo presentación y pulido final.
 
-### D · Analista, evaluación y pitch (sin hilo)
+### D · Analista, evaluación y pitch
 
 - ✅ 12 incidentes y benignos localizados: [`incidentes_localizados.md`](incidentes_localizados.md).
 - ✅ Hoja de ruta: [`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md).
-- ⏳ `eval/`: verdad esperada + script que mida aciertos del agente (veredicto y severidad).
-- ⏳ Medir tokens y segundos por alerta (coste).
-- ⏳ Elegir el diferenciador creativo del pitch.
-- ⏳ Página para el comité de dirección y guion de 5 minutos.
-- ⏳ Guion y grabación del vídeo de la demo con las 10 alertas en vivo (domingo 08/11).
+- 🔄 `eval/` ([PR #20](https://github.com/mazumbo/HackatonMolon/pull/20)): evaluación de los 12 incidentes (veredicto, severidad, cobertura, segundos, tokens), nivel motor sin LLM, ensayo con 10 alertas nuevas.
+- ✅ Diferenciador elegido: turno de noche (`python -m eval.turno_noche`).
+- ⏳ Página para el comité, guion, diapositivas y vídeo de la demo: los lleva un compañero.
 
 ## Registro
 
@@ -91,3 +90,4 @@ _Última actualización: 07/11/2026 22:45_
 - **07/11 noche** · Motor integrado en el agente (#13), UI con los campos nuevos (#14) y ajustes de la matriz (#15). PR #12 cerrado sin fusionar. Abierto el fix de loopback (#16).
 - **07/11 ~20:40** · Mergeados el fix de loopback (#16) y el progreso de la noche (#17).
 - **07/11 ~22:30** · Abierto el límite de tiempo por ticket (#18): 29–45 s por incidente con `ornith`. Detectado que las alertas nuevas darán 404 en la API mock.
+- **07/11 ~23:15** · Evaluación y ensayo con `ornith`: veredicto 12/12, severidad 10/12, todo < 60 s. Diferenciador: turno de noche. Incidente 10 pasa a critical.
