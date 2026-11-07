@@ -3,6 +3,7 @@ El LLM investiga i argumenta; el CODI calcula severitat, escalat obligatori i ap
 import json
 import re
 import time
+from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 
 from openai import BadRequestError, OpenAI
@@ -10,7 +11,7 @@ from openai import BadRequestError, OpenAI
 from . import config
 from .prompts import SYSTEM_PROMPT
 from .severity import LEVELS, compute_severity
-from .context import prefetch, summarize_logs
+from .context import SERVICE_HOSTS, prefetch, prefetch_group, summarize_logs
 from .tools import TOOLS, call_tool, format_for_model, scan_injection
 
 B, S = {"type": "boolean"}, {"type": "string"}
@@ -29,7 +30,11 @@ SUBMIT = {
                 "rule_severity": {"enum": LEVELS},
                 "asset_criticality": {"enum": ["low", "medium", "high", "critical", "unknown"]},
                 "confirmed_execution_or_access": B, "privileged_or_vip": B, "personal_or_payment_data": B,
-                "blocked_before_effect": B, "authorized_flow": B}},
+                "blocked_before_effect": B, "authorized_flow": B,
+                "factor_evidence": {"type": "object", "description": "Por cada factor que marques (y por la criticidad), "
+                    "una frase breve con el hecho concreto y su event_id. Se cita en severity_rationale.",
+                    "properties": {k: S for k in ("asset_criticality", "confirmed_execution_or_access", "privileged_or_vip",
+                                                  "personal_or_payment_data", "blocked_before_effect")}}}},
             "escalation_flags": {"type": "object", "properties": {
                 "malicious_execution_credential_theft_or_persistence": B, "customer_or_employee_data_exfil": B,
                 "financial_fraud": B, "attack_chain": B, "ot_involved": B}},
@@ -60,15 +65,49 @@ def _alerts_meta(alert_ids):
 
 
 _engine = {}
+_FACTOR_TXT = {"asset_criticality": "criticidad", "confirmed_execution_or_access": "acceso/ejecución",
+               "privileged_or_vip": "VIP/privilegios", "personal_or_payment_data": "datos personales/pagos",
+               "blocked_before_effect": "bloqueo"}
 
 
-def _severity(f, alert_ids):
+def _with_service_hosts(a):
+    """Copia de l'alerta amb l'actiu que serveix les URL atacades (www.tarvia.example -> WEB-ECOM01), perque el motor
+    trobi la criticitat real a l'inventari en lloc d'assumir 'alta' per desconegut."""
+    hosts = []
+    for url in (a.get("entities") or {}).get("urls") or []:
+        h = (urlparse(url if "://" in url else "http://" + url).hostname or "").lower()
+        if h in SERVICE_HOSTS:
+            hosts.append({"hostname": SERVICE_HOSTS[h]})
+    if not hosts:
+        return a
+    e = dict(a.get("entities") or {})
+    known = {(x.get("hostname") if isinstance(x, dict) else x) for x in e.get("hosts") or []}
+    e["hosts"] = list(e.get("hosts") or []) + [x for x in hosts if x["hostname"] not in known]
+    return {**a, "entities": e}
+
+
+def _rationale(why, alerts, f):
+    """Justificacio del motor (regla x criticitat = base, +-1, final) amb les regles concretes i els fets del LLM."""
+    rules = sorted({a.get("rule_id") for a in alerts if a.get("rule_id")})
+    if rules and why.startswith("Regla "):
+        lvl, rest = why[len("Regla "):].split(" ", 1)
+        why = f"Regla {lvl} ({', '.join(rules[:4])}{'...' if len(rules) > 4 else ''}) {rest}"
+    ev = f.get("factor_evidence") if isinstance(f.get("factor_evidence"), dict) else {}
+    det = [f"{_FACTOR_TXT[k]}: {str(v).strip().rstrip('.')[:160]}" for k, v in ev.items()
+           if k in _FACTOR_TXT and isinstance(v, str) and v.strip() and (k == "asset_criticality" or f.get(k))]
+    return why + (" Hechos: " + "; ".join(det) + "." if det else "")
+
+
+def _severity(f, alert_ids, alerts_by_id=None, contexto=None):
     """Severitat amb el motor definitiu del rol A (engine/severidad.py): la regla i la criticitat surten de les DADES,
     el LLM nomes pot pujar. Si el motor o el dataset no hi son, es fa servir la matriu provisional d'agent/severity.py."""
     try:
         if "mod" not in _engine:
             from engine import severidad as mod
             _engine["mod"] = mod
+            _engine["ctx"] = contexto
+        if _engine.get("ctx") is None and contexto is None and not _engine.get("ctx_tried"):
+            _engine["ctx_tried"] = True
             try:
                 from engine.prefiltro import Contexto
                 _engine["ctx"] = Contexto.desde_dataset()
@@ -76,25 +115,46 @@ def _severity(f, alert_ids):
                 _engine["ctx"] = None
         alerts = []
         for aid in alert_ids:
+            if alerts_by_id and aid in alerts_by_id:
+                alerts.append(alerts_by_id[aid])
+                continue
             r = call_tool("get_alert", {"alert_id": aid})
             if r.get("status") == 200 and isinstance(r.get("body"), dict):
                 alerts.append(r["body"])
-        r = _engine["mod"].calcular_severidad(alerts, f, contexto=_engine["ctx"])
-        return r["severidad"], r["justificacion"], r.get("autorizado_verificado", False)
+        r = _engine["mod"].calcular_severidad([_with_service_hosts(a) for a in alerts], f,
+                                               contexto=contexto or _engine["ctx"])
+        return r["severidad"], _rationale(r["justificacion"], alerts, f), r.get("autorizado_verificado", False)
     except Exception as e:
         sev, why = compute_severity(f)
         return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})", False
 
 
-def build_ticket(sub, trace, seconds, usage, inj_hits):
+def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=None, alerts_by_id=None, contexto=None,
+                 prefilter=None):
     f = sub.get("severity_factors") or {}
-    sev, why, authorized = _severity(f, sub.get("alert_ids") or [])
+    # Els alert_ids del ticket son els del GRUP (motor del rol A); el que proposi el model de mes, a part.
+    llm_ids = [i for i in (sub.get("alert_ids") or []) if isinstance(i, str)]
+    ids = list(group_ids) if group_ids else llm_ids
+    extra_ids = [i for i in llm_ids if i not in ids]
+    sev, why, authorized = _severity(f, ids, alerts_by_id, contexto)
     verdict = sub.get("verdict", "needs_more_info")
+    open_q = list(sub.get("open_questions") or [])
     if authorized and verdict in ("true_positive", "false_positive"):
         # politica_soc.md: alerta explicada per un canvi aprovat (verificat pel codi) -> benign_true_positive
         verdict = "benign_true_positive"
-    if f.get("authorized_flow") and verdict == "true_positive":
-        verdict = "benign_true_positive"
+    elif verdict == "benign_true_positive" and not authorized:
+        # "Autoritzat" nomes si el codi ho verifica al calendari (autorizado_verificado); si nomes ho diu el LLM, no.
+        # No es pot tancar com a autoritzat, pero tampoc afirmar un atac que el model no veu: decideix una persona.
+        verdict = "needs_more_info"
+        if sev in ("high", "critical"):  # el model no hi veu atac: revisio humana, pero sense ocupar la cua urgent
+            why += f" El modelo no ve ataque y falta verificarlo: severidad medium en lugar de {sev}."
+            sev = "medium"
+        open_q.append("El modelo ve actividad legítima, pero el calendario de cambios no la verifica: "
+                      "confirmar con el responsable antes de cerrar.")
+    if verdict == "false_positive" and sev not in ("informational", "low"):
+        # La regla s'equivoca i no hi ha atac: no pot passar per davant d'alertes reals a la cua.
+        why += f" Falso positivo (sin ataque): severidad informational en lugar de {sev}."
+        sev = "informational"
     fl = sub.get("escalation_flags") or {}
     reasons = []
     if verdict == "true_positive" and sev in ("high", "critical"):
@@ -116,7 +176,6 @@ def build_ticket(sub, trace, seconds, usage, inj_hits):
         if fl.get("ot_involved") and a.get("action") in CONTAINMENT:
             continue
         actions.append(a)
-    ids = sub.get("alert_ids") or []
     escalate = bool(reasons)
     status = "pending_approval" if any(a["requires_approval"] for a in actions) else ("open" if escalate or verdict == "true_positive" else "closed")
     inj = list(sub.get("prompt_injection") or [])
@@ -131,10 +190,15 @@ def build_ticket(sub, trace, seconds, usage, inj_hits):
         "summary": sub.get("summary", ""), "evidence": sub.get("evidence") or [], "enrichment": sub.get("enrichment") or [],
         "mitre": sub.get("mitre") or [], "recommended_actions": actions, "executed_actions": [],
         "escalation": {"escalate": escalate, "to": to if escalate else "", "reason": "; ".join(reasons)},
-        "open_questions": sub.get("open_questions") or [], "triage_seconds": round(seconds, 1),
+        "open_questions": open_q, "triage_seconds": round(seconds, 1),
         "alerts": alerts, "first_alert_at": min((a["created_at"] for a in alerts if a["created_at"]), default=None),
         "prompt_injection": inj, "devils_advocate": sub.get("devils_advocate", ""), "tool_trace": trace,
         "status": status, "usage": usage, "model": config.MODEL,
+        **({"group": {"grupo_id": grupo.get("grupo_id"), "uniones": grupo.get("uniones", []),
+                      "entidades_clave": grupo.get("entidades_clave", []), "reglas": grupo.get("reglas", {})}}
+           if grupo else {}),
+        **({"prefilter": prefilter} if prefilter else {}),
+        **({"related_alert_ids_suggested": extra_ids} if extra_ids else {}),
     }
 
 
@@ -229,28 +293,57 @@ def _make_runner(trace, inj_hits):
 
 
 def triar(alert_id):
+    """Una sola alerta, sense motor (compatibilitat). Per a la cadena completa: agent.pipeline.triar_alerta()."""
+    return triar_grupo([alert_id])
+
+
+def _first_message(alert_ids, compact, ctx, grupo, prefilter):
+    head = (f"Tría el incidente formado por {len(alert_ids)} alertas ({', '.join(alert_ids[:6])}"
+            f"{'...' if len(alert_ids) > 6 else ''}). Es UN solo ticket con TODOS esos alert_ids. "
+            if len(alert_ids) > 1 else f"Tría la alerta {alert_ids[0]}. ")
+    parts = [head + "El código ya ha pedido las alertas y el contexto de sus entidades (activos, usuarios, intel, "
+             "calendario de cambios completo); NO lo vuelvas a pedir. Correlaciona con search_logs solo si hace falta "
+             "(varias búsquedas a la vez) y acaba con submit_ticket. Si ves relación con alertas o logs que NO están en el grupo "
+             "(p. ej. una build de CI y el uso posterior de su clave cloud), dilo en evidence y pon esos alert_ids en alert_ids."]
+    if grupo and len(alert_ids) > 1:
+        parts.append("POR QUÉ SE HAN AGRUPADO (motor determinista):\n" + json.dumps(
+            {"uniones": grupo.get("uniones", [])[:15], "entidades_clave": grupo.get("entidades_clave", []),
+             "reglas": grupo.get("reglas", {})}, ensure_ascii=False))
+    if len(compact) > 1:
+        parts.append("TODAS LAS ALERTAS DEL INCIDENTE (orden temporal):\n<untrusted_data tool=\"grupo\">\n"
+                     + "\n".join(json.dumps(c, ensure_ascii=False) for c in compact) + "\n</untrusted_data>")
+    pistas = [p for r in (prefilter or {}).values() for p in (r.get("pistas") or [])]
+    if pistas:
+        parts.append("PISTAS DEL PREFILTRO (código): " + " | ".join(dict.fromkeys(pistas))[:1500])
+    parts.append("\n".join(f"[{n} {json.dumps(a, ensure_ascii=False)}]\n{t}" for n, a, t in ctx))
+    return "\n\n".join(parts)
+
+
+def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=None):
+    """Tria un grup d'alertes (un incident) i torna UN ticket amb tots els alert_ids.
+    grupo: dict de engine.agrupacion (uniones, entidades_clave...). alerts: {alert_id: dict} si ja es tenen.
+    contexto: engine.prefiltro.Contexto per a la severitat. prefilter: {alert_id: resultat de prefiltrar()}."""
+    alert_ids = list(alert_ids)
     t0, trace, inj_hits = time.time(), [], []
     usage = {"input_tokens": 0, "output_tokens": 0, "steps": 0, "llm_seconds": [], "tools_seconds": 0.0}
+    alerts_by_id = dict(alerts or {})
     try:
         if not config.MODEL:
-            raise RuntimeError("falta TRIAGE_MODEL (id del model)")
+            raise RuntimeError("falta TRIAGE_MODEL (id del modelo)")
         if not config.LLM_API_KEY:
-            raise RuntimeError("falta LLM_API_KEY (clau del LLM de l'equip)")
+            raise RuntimeError("falta LLM_API_KEY (clave del LLM del equipo)")
         client = OpenAI(base_url=config.LLM_BASE_URL, api_key=config.LLM_API_KEY, timeout=config.LLM_TIMEOUT)
         tools = [_as_openai_tool(t) for t in TOOLS + [SUBMIT]]
         run = _make_runner(trace, inj_hits)
         if config.PREFETCH:
             tp = time.time()
-            _, ctx = prefetch(alert_id, run)
+            compact, ctx, alerts_by_id = prefetch_group(alert_ids, run, alerts_by_id)
             usage["prefetch_seconds"] = round(time.time() - tp, 1)
-            first = (f"Tría la alerta {alert_id}. El código ya ha pedido la alerta y el contexto de sus entidades "
-                     "(activos, usuarios, intel, calendario de cambios completo); NO lo vuelvas a pedir. Correlaciona con search_logs "
-                     "solo si hace falta (varias búsquedas a la vez) y acaba con submit_ticket.\n\n"
-                     + "\n".join(f"[{n} {json.dumps(a, ensure_ascii=False)}]\n{t}" for n, a, t in ctx))
+            first = _first_message(alert_ids, compact, ctx, grupo, prefilter)
         else:
-            first = f"Tría la alerta {alert_id}. Empieza con get_alert."
+            first = f"Tría la alerta {alert_ids[0]}. Empieza con get_alert."
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": first}]
-        nudged = False
+        force_next = False
         with ThreadPoolExecutor(max_workers=8) as pool:
             for step in range(1, config.MAX_STEPS + 1):
                 last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
@@ -258,7 +351,7 @@ def triar(alert_id):
                     msgs.append({"role": "user", "content": (
                         "ÚLTIMO PASO: llama YA a submit_ticket con lo que tengas; pon lo que falte en open_questions."
                         if last else "Ya tienes contexto suficiente: si no te falta nada esencial, llama a submit_ticket ahora.")})
-                m = _complete(client, msgs, tools, usage, FORCE_SUBMIT if last else "auto")
+                m = _complete(client, msgs, tools, usage, FORCE_SUBMIT if last or force_next else "auto")
                 calls = list(m.tool_calls or [])
                 content = _strip_think(m.content)
                 msgs.append({"role": "assistant", "content": content,
@@ -271,11 +364,12 @@ def triar(alert_id):
                     sub = _submit_from_text(content)  # alguns models oberts escriuen el JSON en text
                 if sub is not None:
                     usage["llm_seconds_total"] = round(sum(usage["llm_seconds"]), 1)
-                    return build_ticket(sub, trace, time.time() - t0, usage, inj_hits)
+                    return build_ticket(sub, trace, time.time() - t0, usage, inj_hits, alert_ids, grupo, alerts_by_id,
+                                        contexto, prefilter)
                 if not calls:
-                    if nudged:
-                        raise RuntimeError("el model no ha cridat submit_ticket")
-                    nudged = True
+                    if force_next:
+                        raise RuntimeError("el modelo no ha llamado a submit_ticket ni forzándolo")
+                    force_next = True  # el proper pas obliga submit_ticket (tool_choice), com l'ultim pas
                     msgs.append({"role": "user", "content": "Acaba llamando a submit_ticket con tu conclusión."})
                     continue
 
@@ -291,6 +385,9 @@ def triar(alert_id):
                 usage["tools_seconds"] = round(usage["tools_seconds"] + time.time() - tt, 1)
                 for (c, _), content in zip(parsed, outs):
                     msgs.append({"role": "tool", "tool_call_id": c.id, "content": content})
-        raise RuntimeError(f"maxim de {config.MAX_STEPS} passos sense conclusio")
+        raise RuntimeError(f"máximo de {config.MAX_STEPS} pasos sin conclusión")
     except Exception as e:  # triar no ha de llancar mai
-        return fallback_ticket(alert_id, f"{type(e).__name__}: {e}", trace, time.time() - t0, usage)
+        t = fallback_ticket(alert_ids[0] if alert_ids else "SIN-ALERTA", f"{type(e).__name__}: {e}", trace,
+                            time.time() - t0, usage)
+        t["alert_ids"] = alert_ids
+        return t

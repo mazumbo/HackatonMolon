@@ -4,8 +4,10 @@
 pip install -r agent/requirements.txt
 cp agent/.env.example agent/.env   # omple LLM_API_KEY (clau de l'equip); TRIAGE_MODEL=ornith (nemotron no esta disponible)
 # API mock del reto (altre terminal): uvicorn mock_soc_api:app --port 8000   (a 06_herramientas/)
-python -m agent.smoke_test                       # una alerta de punta a punta
-python -m agent.run_batch --limit 10             # escriu out/tickets/*.json
+python -m agent.smoke_test ALR-...                # una alerta en viu: prefiltre -> grup -> ticket
+python -m agent.run_batch                        # incidents (grups de >=2 alertes), un ticket per grup
+python -m agent.run_batch --ids-file vivas.jsonl  # les alertes en viu (ids o alertes senceres)
+python -m agent.run_batch --cerradas             # tambe els tickets del prefiltre (sense LLM)
 UI_TICKETS=out/tickets/ uvicorn server:app --app-dir ui --port 8080
 ```
 
@@ -29,3 +31,10 @@ UI_TICKETS=out/tickets/ uvicorn server:app --app-dir ui --port 8080
 - `run_batch --workers 3`: diverses alertes alhora.
 - `FORCE_SUBMIT_AT=8`: des del pas 8 el model ha de cridar `submit_ticket` (avis previ al pas 7).
 - `smoke_test` mostra el temps per pas del LLM, de la precarrega i de les eines.
+
+## Motor del rol A (agent/pipeline.py)
+- `prefiltrar()` a cada alerta: si tanca, el ticket surt sense LLM (`model: "prefiltro"`, 0 s).
+- La resta s'agrupa amb `engine.agrupacion` i el LLM escriu UN ticket per grup amb tots els `alert_ids`.
+- `benign_true_positive` nomes si el motor verifica el canvi aprovat (`autorizado_verificado`).
+- Una alerta nova (no al dataset) s'afegeix al motor i es reconstrueix (~3 s). Necessita `DATASET_DIR`.
+- Camps nous opcionals del ticket: `group`, `prefilter`, `related_alert_ids_suggested`.
