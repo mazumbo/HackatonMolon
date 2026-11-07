@@ -107,4 +107,4 @@ def summarize_logs(body, samples=5, top=5):
             "first": min(times) if times else None, "last": max(times) if times else None,
             "event_ids": [i for i in ids if i][:25], "field_counts": counts,
             "examples": [short(i) for i in ex],
-            "note": "Resum per codi. Per veure un esdeveniment concret, cerca pel seu event_id amb q."}
+            "note": "Resumen hecho por código. Para ver un evento concreto, búscalo por su event_id con q."}

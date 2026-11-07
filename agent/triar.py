@@ -16,7 +16,7 @@ from .tools import TOOLS, call_tool, format_for_model, scan_injection
 B, S = {"type": "boolean"}, {"type": "string"}
 SUBMIT = {
     "name": "submit_ticket",
-    "description": "Lliura la conclusio final del triatge. Crida-la una sola vegada, al final.",
+    "description": "Entrega la conclusión final del triaje. Llámala una sola vez, al final.",
     "input_schema": {"type": "object", "required": ["alert_ids", "title", "verdict", "confidence", "summary",
                                                    "severity_factors", "evidence", "recommended_actions"],
         "properties": {
@@ -215,8 +215,8 @@ def _make_runner(trace, inj_hits):
     def run(name, args):
         key = name + json.dumps(args, sort_keys=True, ensure_ascii=False)
         if key in seen:  # el model repeteix una consulta: no la tornem a fer ni a enviar sencera
-            return (f'<untrusted_data tool="{name}">{{"repetida": true, "nota": "Ja tens aquest resultat mes amunt; '
-                    f'no el tornis a demanar."}}</untrusted_data>')
+            return (f'<untrusted_data tool="{name}">{{"repetida": true, "nota": "Ya tienes este resultado más arriba; '
+                    f'no lo vuelvas a pedir."}}</untrusted_data>')
         seen[key] = True
         r = call_tool(name, args)
         txt = json.dumps(r, ensure_ascii=False)
@@ -243,12 +243,12 @@ def triar(alert_id):
             tp = time.time()
             _, ctx = prefetch(alert_id, run)
             usage["prefetch_seconds"] = round(time.time() - tp, 1)
-            first = (f"Tria l'alerta {alert_id}. El codi ja ha demanat l'alerta i el context de les seves entitats "
-                     "(actius, usuaris, intel, canvis); NO ho tornis a demanar. Correlaciona amb search_logs "
-                     "(diverses cerques a la vegada si cal) i acaba amb submit_ticket.\n\n"
+            first = (f"Tría la alerta {alert_id}. El código ya ha pedido la alerta y el contexto de sus entidades "
+                     "(activos, usuarios, intel, calendario de cambios completo); NO lo vuelvas a pedir. Correlaciona con search_logs "
+                     "solo si hace falta (varias búsquedas a la vez) y acaba con submit_ticket.\n\n"
                      + "\n".join(f"[{n} {json.dumps(a, ensure_ascii=False)}]\n{t}" for n, a, t in ctx))
         else:
-            first = f"Tria l'alerta {alert_id}. Comenca amb get_alert."
+            first = f"Tría la alerta {alert_id}. Empieza con get_alert."
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": first}]
         nudged = False
         with ThreadPoolExecutor(max_workers=8) as pool:
@@ -256,8 +256,8 @@ def triar(alert_id):
                 last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
                 if step == config.NUDGE_AFTER + 1 or last:
                     msgs.append({"role": "user", "content": (
-                        "ULTIM PAS: crida ARA submit_ticket amb el que tinguis; posa el que falti a open_questions."
-                        if last else "Ja tens prou context: si no et falta res essencial, crida submit_ticket ara.")})
+                        "ÚLTIMO PASO: llama YA a submit_ticket con lo que tengas; pon lo que falte en open_questions."
+                        if last else "Ya tienes contexto suficiente: si no te falta nada esencial, llama a submit_ticket ahora.")})
                 m = _complete(client, msgs, tools, usage, FORCE_SUBMIT if last else "auto")
                 calls = list(m.tool_calls or [])
                 content = _strip_think(m.content)
@@ -276,13 +276,13 @@ def triar(alert_id):
                     if nudged:
                         raise RuntimeError("el model no ha cridat submit_ticket")
                     nudged = True
-                    msgs.append({"role": "user", "content": "Acaba cridant submit_ticket amb la teva conclusio."})
+                    msgs.append({"role": "user", "content": "Acaba llamando a submit_ticket con tu conclusión."})
                     continue
 
                 def one(item):
                     c, args = item
                     if args is None:
-                        content = json.dumps({"error": "arguments no son JSON valid; torna-ho a provar"})
+                        content = json.dumps({"error": "los argumentos no son JSON válido; vuelve a intentarlo"})
                         trace.append({"tool": c.function.name, "args": c.function.arguments, "result": content})
                         return content
                     return run(c.function.name, args)
