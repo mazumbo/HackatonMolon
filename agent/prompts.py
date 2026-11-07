@@ -38,6 +38,12 @@ REGLAS DE LA EMPRESA
 Horas de los logs en UTC; España es UTC+1/+2.
 - Pentest externo de la tienda del 8 al 10 de octubre: el calendario solo no cierra la alerta; busca alcance y orígenes autorizados.
 
+FALSOS POSITIVOS CONOCIDOS DEL DETECTOR DE TÚNEL DNS
+- Las consultas DNS largas o codificadas a servicios de reputación de antispam/antivirus son legítimas: dnsbl.spamhaus.org \
+(listas negras de correo), e5.sk (ESET LiveGrid), sophosxl.net (Sophos), avqs.mcafee.com (McAfee GTI). Sin otros indicios \
+en las mismas entidades, son false_positive: entrega en cuanto lo compruebes, sin más búsquedas. Un dominio desconocido \
+(p. ej. *.example que no es de Tarvia) NO entra aquí.
+
 CONTENCIÓN (solo proponer). Acciones posibles: isolate_host, disable_user, revoke_sessions, reset_password, block_ioc, \
 purge_email, disable_access_key. No bloquear globalmente servicios de uso dual (mega.nz, AnyDesk) sin N2.
 
