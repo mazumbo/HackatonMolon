@@ -44,6 +44,7 @@ def test_pentest_dentro_de_ventana_se_cierra():
     a = waf("A1", "192.0.2.11")
     r = prefiltrar(a, ctx([a], [{"src_ip": "192.0.2.11", "action": "allowed"}]))
     assert r["decision"] == CERRAR and r["cambio"] == "CHG-2026-1042"
+    assert r["veredicto"] == "benign_true_positive"
 
 
 def test_pentest_fuera_de_ventana_no_es_pentest():
@@ -54,7 +55,9 @@ def test_pentest_fuera_de_ventana_no_es_pentest():
 
 def test_waf_bloqueado_sin_trafico_permitido_se_cierra():
     a = waf("A1", "198.18.11.49")
-    assert prefiltrar(a, ctx([a]))["decision"] == CERRAR
+    r = prefiltrar(a, ctx([a]))
+    assert r["decision"] == CERRAR
+    assert r["veredicto"] == "true_positive" and r["severidad"] == "informational"
 
 
 def test_waf_con_trafico_permitido_pasa():

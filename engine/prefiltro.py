@@ -1,7 +1,7 @@
 """Prefiltro determinista del N1 (rol A).
 
-prefiltrar(alerta, contexto) decide, sin LLM, si una alerta se CIERRA como actividad autorizada
-(benign_true_positive) o PASA al agente. Criterio acordado: cerrar solo lo seguro y ser precavidos.
+prefiltrar(alerta, contexto) decide, sin LLM, si una alerta se CIERRA (actividad autorizada ->
+benign_true_positive; ataque web bloqueado sin efecto -> true_positive informational) o PASA al agente. Criterio acordado: cerrar solo lo seguro y ser precavidos.
 
 Una alerta solo se cierra si se cumplen las tres cosas:
   1. Encaja con un cambio aprobado de calendario_cambios.csv (origen, ventana horaria y alcance),
@@ -340,7 +340,9 @@ def prefiltrar(alerta, contexto):
         if explica:
             salida.update(veredicto="benign_true_positive", severidad="informational", cambio=explica[0].id)
         else:
-            salida.update(veredicto="benign_true_positive", severidad="informational")
+            # Ataque real pero sin efecto: true_positive informational, como en 01_contexto/ticket_ejemplo.json.
+            # benign_true_positive es solo para actividad autorizada (politica_soc.md, apartado 1).
+            salida.update(veredicto="true_positive", severidad="informational")
         return salida
     except Exception as e:  # el prefiltro nunca debe tumbar la cadena
         salida["pistas"] = [f"prefiltro con error ({type(e).__name__}); revisar con el agente"]
