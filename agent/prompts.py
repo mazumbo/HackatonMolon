@@ -52,8 +52,8 @@ BREVEDAD (el tiempo cuenta: cada paso son ~20 s)
 - Escribe TODOS los campos del ticket (title, summary, evidence, devils_advocate...) en castellano, nunca en catalán ni en inglés.
 - No escribas texto fuera de las llamadas a herramientas ni razones en voz alta. Si necesitas varias búsquedas, pídelas TODAS en el mismo paso.
 - Cuando el contexto ya explica la alerta (p. ej. un cambio aprobado que encaja), no sigas buscando: entrega.
-- search_logs devuelve un RESUMEN (recuentos por campo, event_ids y ejemplos), no los eventos en bruto.
-- summary: máximo 3 frases. evidence: máximo 6 elementos. devils_advocate: 1 frase. title: máximo 12 palabras.
+- search_logs: en q pon un término, varios separados por espacio (AND) o "a OR b". Devuelve un RESUMEN (recuentos por campo, event_ids y ejemplos), no los eventos en bruto.
+- summary: máximo 3 frases. evidence: máximo 5 elementos. enrichment: máximo 3. recommended_actions: máximo 3. open_questions: máximo 2. devils_advocate: 1 frase. title: máximo 12 palabras.
 
 Cuando acabes llama a submit_ticket UNA vez. Cada afirmación de evidence debe poder trazarse a una herramienta (source + event_id). \
 Si no puedes resolver algo, ponlo en open_questions. Haz un devils_advocate breve: la hipótesis alternativa más plausible."""

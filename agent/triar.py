@@ -346,7 +346,7 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
         force_next = False
         with ThreadPoolExecutor(max_workers=8) as pool:
             for step in range(1, config.MAX_STEPS + 1):
-                last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
+                last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS) or time.time() - t0 > config.TIME_BUDGET
                 if step == config.NUDGE_AFTER + 1 or last:
                     msgs.append({"role": "user", "content": (
                         "ÚLTIMO PASO: llama YA a submit_ticket con lo que tengas; pon lo que falte en open_questions."

@@ -22,7 +22,8 @@ TOOLS = [
           {"key": _S}, ["key"]),
     _tool("search_logs", "Búsqueda de texto libre en una fuente de logs (proxy, dns, edr_events, idp_signins, waf, email, "
           "ecom_auth, firewall, email_clicks, vpn, ai_gateway, ecom_account, cloudtrail, sql_audit, dlp, idp_audit, "
-          "cicd_builds, ad_events). desde/hasta en ISO 8601 UTC. Si truncated=true, afina la consulta.",
+          "cicd_builds, ad_events). q: un término, varios separados por espacio (AND) o \"a OR b\". desde/hasta en ISO 8601 UTC. "
+          "Si truncated=true, afina la consulta.",
           {"source": _S, "q": _S, "desde": _S, "hasta": _S, "limit": {"type": "integer"}}, ["source"]),
     _tool("get_intel", "TIP interno + GeoIP/ASN para una IP, dominio o hash. tip=null NO significa limpio.",
           {"indicator": _S}, ["indicator"]),
@@ -55,10 +56,56 @@ def scan_injection(text):
     return [text[max(0, m.start() - 40): m.end() + 40] for m in _INJ.finditer(text)][:5]
 
 
+def _search_logs_multi(args):
+    """La API busca q com a subcadena literal. Aqui: "a OR b" uneix resultats; "a b" (espais) = AND:
+    es demana el terme mes llarg i es filtren els events que contenen tots els altres."""
+    q = str(args.get("q") or "").strip()
+    if " OR " in q:
+        parts = [p.strip() for p in q.split(" OR ") if p.strip()]
+        items, seen, trunc, status = [], set(), False, 200
+        for p in parts[:6]:
+            r = _search_logs_multi({**args, "q": p})
+            b = r.get("body") if isinstance(r.get("body"), dict) else {}
+            status = r.get("status", status)
+            trunc = trunc or bool(b.get("truncated"))
+            for it in b.get("items") or []:
+                k = json.dumps(it, sort_keys=True) if not isinstance(it, dict) else str(it.get("event_id") or it.get("id") or json.dumps(it, sort_keys=True))
+                if k not in seen:
+                    seen.add(k)
+                    items.append(it)
+        return {"status": 200 if items else status, "body": {"count": len(items), "truncated": trunc, "items": items}}
+    terms = q.split()
+    if len(terms) <= 1:
+        return _call(*PATHS["search_logs"], args)
+    # es demana cada terme i es filtra a partir del mes selectiu (menys resultats, preferint no truncat)
+    best = None
+    for t in terms[:4]:
+        r = _call(*PATHS["search_logs"], {**args, "q": t})
+        b = r.get("body")
+        if not isinstance(b, dict) or not isinstance(b.get("items"), list):
+            continue
+        key = (bool(b.get("truncated")), len(b["items"]))
+        if best is None or key < best[0]:
+            best = (key, t, r)
+    if best is None:
+        return _call(*PATHS["search_logs"], args)
+    _, main, r = best
+    b = r["body"]
+    rest = [t.lower() for t in terms if t != main]
+    items = [it for it in b["items"] if all(t in json.dumps(it, ensure_ascii=False).lower() for t in rest)]
+    return {"status": r.get("status"), "body": {**b, "count": len(items), "items": items,
+                                                "query_note": f"AND de {terms}: se buscó '{main}' y se filtró por el resto"}}
+
+
 def call_tool(name, args):
+    if name == "search_logs":
+        return _search_logs_multi(args)
     if name not in PATHS:
         return {"status": 0, "error": f"eina desconeguda: {name}"}
-    path, qkeys = PATHS[name]
+    return _call(*PATHS[name], args, name=name)
+
+
+def _call(path, qkeys, args, name="search_logs"):
     try:
         url = SOC_API_URL + path.format(**{k: quote(str(v), safe="") for k, v in args.items()})
     except KeyError as e:
