@@ -10,7 +10,7 @@ import threading
 import time
 from collections import Counter
 
-from .tools import call_tool
+from .tools import KNOWN_ALERTS, call_tool
 from .triar import triar_grupo
 
 CERRAR = "cerrar"
@@ -22,6 +22,7 @@ class Motor:
         self._datos = datos
         self._base = datos.cargar_alertas()
         self._extra = {a["alert_id"]: a for a in extra_alerts if a.get("alert_id")}
+        KNOWN_ALERTS.update(self._extra)
         self._lock = threading.Lock()
         self._build()
 
@@ -52,6 +53,7 @@ class Motor:
         if nous:
             with self._lock:
                 self._extra.update({a["alert_id"]: a for a in nous})
+                KNOWN_ALERTS.update({a["alert_id"]: a for a in nous})
                 self._build()
         return [a for a in alert_ids if a in self.por_id]
 

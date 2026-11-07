@@ -100,7 +100,17 @@ def _search_logs_multi(args):
                                                 "query_note": f"AND de {terms}: se buscó '{main}' y se filtró por el resto"}}
 
 
+# Alertes que el motor coneix pero l'API mock no (les noves del dia de la demo, carregades des d'un fitxer).
+KNOWN_ALERTS = {}
+
+
 def call_tool(name, args):
+    if name == "get_alert":
+        r = _call(*PATHS[name], args, name=name)
+        aid = str(args.get("alert_id", ""))
+        if r.get("status") != 200 and aid in KNOWN_ALERTS:
+            return {"status": 200, "body": KNOWN_ALERTS[aid]}
+        return r
     if name == "search_logs":
         return _search_logs_multi(args)
     if name not in PATHS:
