@@ -3,7 +3,7 @@
 Estado vivo del equipo. **Actualizadlo en el mismo PR que cierra cada tarea**: mover la línea de "Por hacer" a "Hecho", con el PR o commit al lado.
 Leyenda: ✅ hecho · 🔄 en curso · ⏳ por hacer · ⛔ bloqueado. Plan completo en [`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md).
 
-_Última actualización: 07/11/2026 20:40_
+_Última actualización: 07/11/2026 22:45_
 
 ## Resumen
 
@@ -11,20 +11,22 @@ _Última actualización: 07/11/2026 20:40_
 | --- | --- | --- |
 | H1 · Arranque | ✅ | |
 | H6 · N1 de punta a punta | ✅ | Agente a 42–56 s por alerta ([PR #9](https://github.com/mazumbo/HackatonMolon/pull/9)); la UI pinta los campos nuevos ([PR #14](https://github.com/mazumbo/HackatonMolon/pull/14)) |
-| H12 · N1 fiable + N2 | 🔄 | Motor integrado en el agente. Falta: fix de loopback ([PR #16](https://github.com/mazumbo/HackatonMolon/pull/16)), acelerar grupos de ruido y evaluar contra los 12 incidentes (rol D) |
-| H18 · Congelación | ⏳ | Antes de las 9:00 del domingo |
-| H22 · Ensayo general | ⏳ | Vídeo de la demo con las 10 alertas en vivo |
+| H12 · N1 fiable + N2 | 🔄 | Motor integrado y fix de loopback fusionado. Falta: fusionar el límite de tiempo ([PR #18](https://github.com/mazumbo/HackatonMolon/pull/18)) y evaluar contra los 12 incidentes (rol D) |
+| H18 · Congelación | ⏳ | Antes de las 9:00 del domingo. Falta soportar alertas que la API mock no conoce |
+| H22 · Ensayo general | ⏳ | Ensayo con 10 alertas y vídeo de la demo con las 10 alertas en vivo |
 
 ## Entrega (domingo 08/11, 9:00)
 
 - La organización publica **10 alertas en vivo** en el GitHub del reto, con el mismo formato que las del repo. Podemos consumirlas como queramos.
 - Con ellas hay que **grabar un vídeo de la demo**, que se mostrará en la presentación (página 09).
-- Objetivo: **menos de 60 s por alerta**. Las alertas sueltas ya cumplen (42–56 s); los grupos de ruido todavía no (63–79 s).
+- Objetivo: **menos de 60 s por alerta**. Con el [PR #18](https://github.com/mazumbo/HackatonMolon/pull/18) los 5 incidentes probados con `ornith` tardan entre 29 y 45 s, y el lote de prueba baja de 157 s a 88 s usando una cuarta parte de los tokens.
+- ⚠️ Las 10 alertas son **nuevas**: la API mock no las conoce y `get_alert` devuelve 404. Hay que leerlas desde el fichero que publiquen (ver bloqueos).
 
 ## Bloqueos y riesgos
 
-- ⚠️ **Agrupación por IP de loopback**: `127.0.0.2` y otras IPs reservadas unían alertas sin relación. A lo corrige en [PR #16](https://github.com/mazumbo/HackatonMolon/pull/16) (abierto).
-- ⚠️ **Velocidad en grupos de ruido**: 63–79 s por grupo, por encima del objetivo de 60 s.
+- ⛔ **Alertas nuevas que la API mock no conoce**: con las 10 alertas del domingo, `get_alert` dará 404. B lo arregla con un plan alternativo: si la API no tiene la alerta, se usa la que recibe el motor.
+- ⚠️ **Límite de tiempo sin fusionar**: el [PR #18](https://github.com/mazumbo/HackatonMolon/pull/18) resuelve la velocidad, pero sigue abierto.
+- ⚠️ **Sin ensayo general**: falta una pasada completa con 10 alertas (agente + UI) antes del domingo.
 - ⚠️ **Rol D sin hilo**: evaluación y guion del vídeo sin empezar. Es lo más urgente para el domingo.
 - ⚠️ **Sin plan B offline**: si falla la red o la pasarela durante la demo no hay resultados precalculados.
 - ℹ️ **Diferenciador creativo sin elegir**: falta decidir qué nos distingue en el pitch.
@@ -40,7 +42,7 @@ _Última actualización: 07/11/2026 20:40_
 - ✅ Matriz de severidad ([PR #6](https://github.com/mazumbo/HackatonMolon/pull/6), [PR #8](https://github.com/mazumbo/HackatonMolon/pull/8)): regla × criticidad del afectado; lo desconocido cuenta como alta; el LLM puede subir pero nunca bajar.
 - ✅ `agrupar(alertas)`: correlación por usuario, host, IP y hash ([PR #11](https://github.com/mazumbo/HackatonMolon/pull/11)).
 - ✅ Ajustes de la matriz ([PR #15](https://github.com/mazumbo/HackatonMolon/pull/15)): WAF bloqueado informational, MFA aprobado = acceso confirmado, grupos que no se encadenan, y el prefiltro cierra el DNS de productos de seguridad. **Prefiltro: cierra 4.339 de 11.061 alertas y ninguno de los 12 incidentes. Severidad en los 12 incidentes: 9 critical y 3 high.**
-- 🔄 IPs de loopback y reservadas no unen alertas ([PR #16](https://github.com/mazumbo/HackatonMolon/pull/16), abierto).
+- ✅ IPs de loopback y reservadas (`127.0.0.2` y similares) no unen alertas ([PR #16](https://github.com/mazumbo/HackatonMolon/pull/16)).
 - ⏳ Métricas del turno de noche con datos reales del agente.
 - ⏳ Plan B offline: precalcular resultados por si falla la red en la demo.
 
@@ -52,7 +54,8 @@ _Última actualización: 07/11/2026 20:40_
 - ✅ Triaje más rápido: de 114 s a 42–56 s por alerta ([PR #9](https://github.com/mazumbo/HackatonMolon/pull/9)).
 - ✅ Motor de A integrado ([PR #13](https://github.com/mazumbo/HackatonMolon/pull/13)): prefiltro antes del LLM, un ticket por grupo, campos `group`, `prefilter` y `related_alert_ids_suggested`, y justificación de severidad mejorada.
 - ❌ [PR #12](https://github.com/mazumbo/HackatonMolon/pull/12) (`severity_rationale`) cerrado sin fusionar: lo cubre el #13.
-- 🔄 Bajar los grupos de ruido de 63–79 s a menos de 60 s.
+- 🔄 Límite de tiempo por ticket y búsquedas de varios términos ([PR #18](https://github.com/mazumbo/HackatonMolon/pull/18), abierto): al pasar `TIME_BUDGET` (30 s, contando lo que tardará el paso siguiente) se obliga a entregar el ticket; `search_logs` entiende `a b` (AND) y `a OR b`, que antes daban 0 resultados y hacían repetir búsquedas; ticket final más corto; ticket robusto cuando el modelo manda campos como texto. **Con `ornith`: 5 incidentes entre 29 y 45 s; lote de 157 s a 88 s con 1/4 de los tokens.**
+- ⏳ Plan alternativo cuando `get_alert` da 404 (alertas nuevas del domingo): usar la alerta que llega del motor.
 - ⏳ Validar la salida contra `ticket_salida.schema.json`.
 - ⏳ Estable en las 150 alertas de desarrollo, sin errores.
 - ⏳ Robustez con alertas raras o campos vacíos.
@@ -63,6 +66,7 @@ _Última actualización: 07/11/2026 20:40_
 - ✅ Contrato de ticket con el agente: [`ui/CONTRATO_TICKET.md`](../ui/CONTRATO_TICKET.md).
 - ✅ Campos del motor en la UI: `group`, `prefilter`, `related_alert_ids_suggested` ([PR #14](https://github.com/mazumbo/HackatonMolon/pull/14)).
 - ⏳ Conectar a los tickets reales del agente con las 10 alertas en vivo (`UI_TICKETS=out/tickets/`).
+- ⏳ Ensayo general con 10 alertas, de la entrada a la UI.
 - ⏳ Modo presentación y pulido final.
 
 ### D · Analista, evaluación y pitch (sin hilo)
@@ -85,3 +89,5 @@ _Última actualización: 07/11/2026 20:40_
 - **07/11 ~18:00** · Aviso de la organización: el domingo 08/11 a las 9:00 llegan 10 alertas en vivo y hay que grabar el vídeo de la demo.
 - **07/11 tarde** · Mergeados `ornith` por defecto (#7), matriz de severidad (#6, #8), agente más rápido (#9), prefiltro de WAF (#10) y agrupación (#11).
 - **07/11 noche** · Motor integrado en el agente (#13), UI con los campos nuevos (#14) y ajustes de la matriz (#15). PR #12 cerrado sin fusionar. Abierto el fix de loopback (#16).
+- **07/11 ~20:40** · Mergeados el fix de loopback (#16) y el progreso de la noche (#17).
+- **07/11 ~22:30** · Abierto el límite de tiempo por ticket (#18): 29–45 s por incidente con `ornith`. Detectado que las alertas nuevas darán 404 en la API mock.
