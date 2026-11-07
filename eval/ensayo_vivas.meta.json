@@ -1,0 +1,72 @@
+[
+ {
+  "alert_id": "ALR-20261108-900001",
+  "origen": "ALR-20261007-011785",
+  "que": "Inc. 1 · phishing de firma (BEC)",
+  "veredicto": "true_positive",
+  "severidad": "critical"
+ },
+ {
+  "alert_id": "ALR-20261108-900002",
+  "origen": "ALR-20261006-011826",
+  "que": "Inc. 12 · criptominería JENKINS",
+  "veredicto": "true_positive",
+  "severidad": "critical"
+ },
+ {
+  "alert_id": "ALR-20261108-900003",
+  "origen": "ALR-20261020-011914",
+  "que": "Inc. 10 · sesión reutilizada tras phishing con inyección",
+  "veredicto": "true_positive",
+  "severidad": "high"
+ },
+ {
+  "alert_id": "ALR-20261108-900004",
+  "origen": "ALR-20261020-011898",
+  "que": "Inc. 4 · SMB del portátil a los TPV",
+  "veredicto": "true_positive",
+  "severidad": "critical"
+ },
+ {
+  "alert_id": "ALR-20261108-900005",
+  "origen": "ALR-20261013-011815",
+  "que": "Inc. 7 · password spraying por Tor",
+  "veredicto": "true_positive",
+  "severidad": "critical"
+ },
+ {
+  "alert_id": "ALR-20261108-900006",
+  "origen": "ALR-20261011-011877",
+  "que": "Inc. 5 · VPN de Logisoft (entra como low)",
+  "veredicto": "true_positive",
+  "severidad": "high"
+ },
+ {
+  "alert_id": "ALR-20261108-900007",
+  "origen": "ALR-20261007-011874",
+  "que": "Benigno · nóminas a la gestoría (FLUJO-0007)",
+  "veredicto": "benign_true_positive",
+  "severidad": null
+ },
+ {
+  "alert_id": "ALR-20261108-900008",
+  "origen": "ALR-20261005-000301",
+  "que": "Ruido · PowerShell codificado (desarrollo)",
+  "veredicto": null,
+  "severidad": null
+ },
+ {
+  "alert_id": "ALR-20261108-900009",
+  "origen": "ALR-20261005-000440",
+  "que": "Ruido · firma WAF (desarrollo)",
+  "veredicto": null,
+  "severidad": null
+ },
+ {
+  "alert_id": "ALR-20261108-900010",
+  "origen": "ALR-20261005-000099",
+  "que": "Ruido · correo (desarrollo)",
+  "veredicto": null,
+  "severidad": null
+ }
+]
