@@ -227,7 +227,7 @@ def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=Non
     return {
         "ticket_id": "TKT-" + (ids[0] if ids else "SIN-ALERTA"), "alert_ids": ids,
         "title": sub.get("title", ""), "verdict": verdict, "confidence": sub.get("confidence", 0.0),
-        "severity": sev, "severity_rationale": why, "affected": sub.get("affected") or {},
+        "severity": sev, "severity_rationale": why, "severity_factors": f, "affected": sub.get("affected") or {},
         "summary": sub.get("summary", ""), "evidence": sub.get("evidence") or [], "enrichment": sub.get("enrichment") or [],
         "mitre": sub.get("mitre") or [], "recommended_actions": actions, "executed_actions": [],
         "escalation": {"escalate": escalate, "to": to if escalate else "", "reason": "; ".join(reasons)},

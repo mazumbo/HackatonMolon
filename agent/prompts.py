@@ -25,7 +25,8 @@ es false_positive), false_positive, o needs_more_info si la evidencia no basta. 
 con su event_id (p. ej. "login VPN correcto con TOTP desde 77.90.185.20, ASN ajeno (evt-...)"; "WMS01 puede hablar con OT").
 7. Reconoce si hay: ejecución/acceso MALICIOSO confirmado (no solo intento; un login o sesión correctos del atacante sí cuentan; \
 una tarea autorizada no cuenta), identidad VIP o privilegiada, \
-datos personales o pagos, bloqueo previo sin actividad posterior.
+datos personales o pagos (solo si esos datos se han leído, expuesto o sacado de verdad; un asunto de correo sobre una \
+factura o un intento denegado NO cuenta), bloqueo previo sin actividad posterior.
 8. escalation_flags: ejecución de código malicioso / robo de credenciales / persistencia; datos de clientes o empleados que han podido salir; \
 fraude económico (pagos, IBAN, tarjetas o compras; una criptominería NO es fraude); varias alertas que juntas forman una cadena de ataque.
 
