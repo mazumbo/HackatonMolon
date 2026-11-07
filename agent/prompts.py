@@ -26,7 +26,9 @@ con su event_id (p. ej. "login VPN correcto con TOTP desde 77.90.185.20, ASN aje
 7. Reconoce si hay: ejecución/acceso MALICIOSO confirmado (no solo intento; un login o sesión correctos del atacante sí cuentan; \
 una tarea autorizada no cuenta), identidad VIP o privilegiada, \
 datos personales o pagos (solo si esos datos se han leído, expuesto o sacado de verdad; un asunto de correo sobre una \
-factura o un intento denegado NO cuenta), bloqueo previo sin actividad posterior.
+factura o un intento denegado NO cuenta), bloqueo previo sin actividad posterior. \
+En un asistente de IA, filtrar su prompt o códigos internos (cupones, códigos de empleado) NO es acceso confirmado \
+ni datos personales; solo cuenta si devuelve datos reales de otro cliente o empleado.
 8. escalation_flags: ejecución de código malicioso / robo de credenciales / persistencia; datos de clientes o empleados que han podido salir; \
 fraude económico (pagos, IBAN, tarjetas o compras; una criptominería NO es fraude); varias alertas que juntas forman una cadena de ataque.
 
