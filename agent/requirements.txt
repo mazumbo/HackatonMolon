@@ -1,3 +1,4 @@
-anthropic
 requests
 python-dotenv
+# nomes si LLM_PROVIDER=anthropic
+anthropic

@@ -3,8 +3,6 @@ El LLM investiga i argumenta; el CODI calcula severitat, escalat obligatori i ap
 import json
 import time
 
-import anthropic
-
 from . import config
 from .prompts import SYSTEM_PROMPT
 from .severity import LEVELS, compute_severity
@@ -101,7 +99,7 @@ def build_ticket(sub, trace, seconds, usage, inj_hits):
         "open_questions": sub.get("open_questions") or [], "triage_seconds": round(seconds, 1),
         "alerts": alerts, "first_alert_at": min((a["created_at"] for a in alerts if a["created_at"]), default=None),
         "prompt_injection": inj, "devils_advocate": sub.get("devils_advocate", ""), "tool_trace": trace,
-        "status": status, "usage": usage, "model": config.MODEL,
+        "status": status, "usage": usage, "model": f"{config.PROVIDER}:{config.MODEL}",
     }
 
 
@@ -114,40 +112,58 @@ def fallback_ticket(alert_id, error, trace, seconds, usage):
             "open_questions": [error], "triage_seconds": round(seconds, 1), "tool_trace": trace, "status": "open", "usage": usage}
 
 
+def _run_tool_factory(trace, inj_hits):
+    def run_tool(name, args):
+        r = call_tool(name, args)
+        txt = json.dumps(r, ensure_ascii=False)
+        inj_hits.extend((name, e) for e in scan_injection(txt))
+        trace.append({"tool": name, "args": args, "result": txt[:600]})
+        return format_for_model(name, r)
+    return run_tool
+
+
+def _loop_anthropic(user_msg, run_tool, usage):
+    import anthropic
+    client = anthropic.Anthropic()
+    msgs = [{"role": "user", "content": user_msg}]
+    nudged = False
+    for _ in range(config.MAX_STEPS):
+        resp = client.messages.create(model=config.MODEL, max_tokens=4096, system=SYSTEM_PROMPT,
+                                      tools=TOOLS + [SUBMIT], messages=msgs)
+        usage["input_tokens"] += resp.usage.input_tokens
+        usage["output_tokens"] += resp.usage.output_tokens
+        usage["steps"] += 1
+        msgs.append({"role": "assistant", "content": resp.content})
+        calls = [b for b in resp.content if b.type == "tool_use"]
+        sub = next((c.input for c in calls if c.name == "submit_ticket"), None)
+        if sub is not None:
+            return sub
+        if not calls:
+            if nudged:
+                raise RuntimeError("el model no ha cridat submit_ticket")
+            nudged = True
+            msgs.append({"role": "user", "content": "Acaba cridant submit_ticket amb la teva conclusio."})
+            continue
+        msgs.append({"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": c.id, "content": run_tool(c.name, c.input)} for c in calls]})
+    raise RuntimeError(f"maxim de {config.MAX_STEPS} passos sense conclusio")
+
+
 def triar(alert_id):
     t0, trace, inj_hits = time.time(), [], []
     usage = {"input_tokens": 0, "output_tokens": 0, "steps": 0}
     try:
         if not config.MODEL:
             raise RuntimeError("falta TRIAGE_MODEL (id del model)")
-        client = anthropic.Anthropic()
-        msgs = [{"role": "user", "content": f"Tria l'alerta {alert_id}. Comenca amb get_alert."}]
-        nudged = False
-        for _ in range(config.MAX_STEPS):
-            resp = client.messages.create(model=config.MODEL, max_tokens=4096, system=SYSTEM_PROMPT,
-                                          tools=TOOLS + [SUBMIT], messages=msgs)
-            usage["input_tokens"] += resp.usage.input_tokens
-            usage["output_tokens"] += resp.usage.output_tokens
-            usage["steps"] += 1
-            msgs.append({"role": "assistant", "content": resp.content})
-            calls = [b for b in resp.content if b.type == "tool_use"]
-            sub = next((c.input for c in calls if c.name == "submit_ticket"), None)
-            if sub is not None:
-                return build_ticket(sub, trace, time.time() - t0, usage, inj_hits)
-            if not calls:
-                if nudged:
-                    raise RuntimeError("el model no ha cridat submit_ticket")
-                nudged = True
-                msgs.append({"role": "user", "content": "Acaba cridant submit_ticket amb la teva conclusio."})
-                continue
-            results = []
-            for c in calls:
-                r = call_tool(c.name, c.input)
-                txt = json.dumps(r, ensure_ascii=False)
-                inj_hits += [(c.name, e) for e in scan_injection(txt)]
-                trace.append({"tool": c.name, "args": c.input, "result": txt[:600]})
-                results.append({"type": "tool_result", "tool_use_id": c.id, "content": format_for_model(c.name, r)})
-            msgs.append({"role": "user", "content": results})
-        raise RuntimeError(f"maxim de {config.MAX_STEPS} passos sense conclusio")
+        user_msg = f"Tria l'alerta {alert_id}. Comenca amb get_alert."
+        run_tool = _run_tool_factory(trace, inj_hits)
+        if config.PROVIDER == "quiver":
+            from .llm_quiver import run_loop
+            sub = run_loop(SYSTEM_PROMPT, user_msg, TOOLS + [SUBMIT], run_tool, usage)
+        elif config.PROVIDER == "anthropic":
+            sub = _loop_anthropic(user_msg, run_tool, usage)
+        else:
+            raise RuntimeError(f"LLM_PROVIDER desconegut: {config.PROVIDER}")
+        return build_ticket(sub, trace, time.time() - t0, usage, inj_hits)
     except Exception as e:  # triar no ha de llancar mai
         return fallback_ticket(alert_id, f"{type(e).__name__}: {e}", trace, time.time() - t0, usage)
