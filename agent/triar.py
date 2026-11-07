@@ -3,6 +3,7 @@ El LLM investiga i argumenta; el CODI calcula severitat, escalat obligatori i ap
 import json
 import re
 import time
+from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 
 from openai import BadRequestError, OpenAI
@@ -10,7 +11,7 @@ from openai import BadRequestError, OpenAI
 from . import config
 from .prompts import SYSTEM_PROMPT
 from .severity import LEVELS, compute_severity
-from .context import prefetch, summarize_logs
+from .context import SERVICE_HOSTS, prefetch, summarize_logs
 from .tools import TOOLS, call_tool, format_for_model, scan_injection
 
 B, S = {"type": "boolean"}, {"type": "string"}
@@ -29,7 +30,11 @@ SUBMIT = {
                 "rule_severity": {"enum": LEVELS},
                 "asset_criticality": {"enum": ["low", "medium", "high", "critical", "unknown"]},
                 "confirmed_execution_or_access": B, "privileged_or_vip": B, "personal_or_payment_data": B,
-                "blocked_before_effect": B, "authorized_flow": B}},
+                "blocked_before_effect": B, "authorized_flow": B,
+                "factor_evidence": {"type": "object", "description": "Por cada factor que marques (y por la criticidad), "
+                    "una frase breve con el hecho concreto y su event_id. Se cita en severity_rationale.",
+                    "properties": {k: S for k in ("asset_criticality", "confirmed_execution_or_access", "privileged_or_vip",
+                                                  "personal_or_payment_data", "blocked_before_effect")}}}},
             "escalation_flags": {"type": "object", "properties": {
                 "malicious_execution_credential_theft_or_persistence": B, "customer_or_employee_data_exfil": B,
                 "financial_fraud": B, "attack_chain": B, "ot_involved": B}},
@@ -60,6 +65,37 @@ def _alerts_meta(alert_ids):
 
 
 _engine = {}
+_FACTOR_TXT = {"asset_criticality": "criticidad", "confirmed_execution_or_access": "acceso/ejecución",
+               "privileged_or_vip": "VIP/privilegios", "personal_or_payment_data": "datos personales/pagos",
+               "blocked_before_effect": "bloqueo"}
+
+
+def _with_service_hosts(a):
+    """Copia de l'alerta amb l'actiu que serveix les URL atacades (www.tarvia.example -> WEB-ECOM01), perque el motor
+    trobi la criticitat real a l'inventari en lloc d'assumir 'alta' per desconegut."""
+    hosts = []
+    for url in (a.get("entities") or {}).get("urls") or []:
+        h = (urlparse(url if "://" in url else "http://" + url).hostname or "").lower()
+        if h in SERVICE_HOSTS:
+            hosts.append({"hostname": SERVICE_HOSTS[h]})
+    if not hosts:
+        return a
+    e = dict(a.get("entities") or {})
+    known = {(x.get("hostname") if isinstance(x, dict) else x) for x in e.get("hosts") or []}
+    e["hosts"] = list(e.get("hosts") or []) + [x for x in hosts if x["hostname"] not in known]
+    return {**a, "entities": e}
+
+
+def _rationale(why, alerts, f):
+    """Justificacio del motor (regla x criticitat = base, +-1, final) amb les regles concretes i els fets del LLM."""
+    rules = sorted({a.get("rule_id") for a in alerts if a.get("rule_id")})
+    if rules and why.startswith("Regla "):
+        lvl, rest = why[len("Regla "):].split(" ", 1)
+        why = f"Regla {lvl} ({', '.join(rules[:4])}{'...' if len(rules) > 4 else ''}) {rest}"
+    ev = f.get("factor_evidence") if isinstance(f.get("factor_evidence"), dict) else {}
+    det = [f"{_FACTOR_TXT[k]}: {str(v).strip().rstrip('.')[:160]}" for k, v in ev.items()
+           if k in _FACTOR_TXT and isinstance(v, str) and v.strip() and (k == "asset_criticality" or f.get(k))]
+    return why + (" Hechos: " + "; ".join(det) + "." if det else "")
 
 
 def _severity(f, alert_ids):
@@ -79,8 +115,8 @@ def _severity(f, alert_ids):
             r = call_tool("get_alert", {"alert_id": aid})
             if r.get("status") == 200 and isinstance(r.get("body"), dict):
                 alerts.append(r["body"])
-        r = _engine["mod"].calcular_severidad(alerts, f, contexto=_engine["ctx"])
-        return r["severidad"], r["justificacion"], r.get("autorizado_verificado", False)
+        r = _engine["mod"].calcular_severidad([_with_service_hosts(a) for a in alerts], f, contexto=_engine["ctx"])
+        return r["severidad"], _rationale(r["justificacion"], alerts, f), r.get("autorizado_verificado", False)
     except Exception as e:
         sev, why = compute_severity(f)
         return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})", False
