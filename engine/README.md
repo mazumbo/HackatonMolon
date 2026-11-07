@@ -38,7 +38,7 @@ No se usan textos libres de la alerta como prueba (`change_ticket`, `maintenance
 
 ## Resultado sobre el dataset completo (07/11/2026)
 
-- Se cierran 4.271 de las 11.061 alertas: 3.386 ataques web bloqueados, 833 de SCCM, las 20 del pentest, las 19 de Nessus y unas pocas de otros cambios.
+- Se cierran 4.339 de las 11.061 alertas: 3.442 ataques web bloqueados, 845 de SCCM, 68 de consultas DNS codificadas de productos de seguridad (falso positivo; lista cerrada de 4 dominios, y solo si lo hacen 20 o más equipos y el dominio tiene más de un año), las 20 del pentest, las 19 de Nessus y unas pocas de otros cambios.
 - Otras 516 parecían cerrables, pero se retienen por entidad caliente. Son casi todas de SCCM en equipos que tienen alguna otra alerta.
 - No se cierra **ninguna** de las alertas de los 12 incidentes de `docs/incidentes_localizados.md`, y hay un test que lo comprueba.
 

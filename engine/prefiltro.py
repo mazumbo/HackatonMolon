@@ -31,6 +31,17 @@ PICO_FACTOR, PICO_MINIMO = 3.0, 5           # pico si la hora supera max(3 x lo 
 
 CERRAR, PASAR = "cerrar", "pasar"
 
+# Consultas DNS largas y codificadas que hacen los propios productos de seguridad (lista cerrada).
+# Se comprueba el dominio padre de evidence, nunca textos libres. Cualquier otro dominio pasa al agente.
+DOMINIOS_SEGURIDAD = {
+    "dnsbl.spamhaus.org": "lista negra DNS de Spamhaus",
+    "e5.sk": "ESET",
+    "sophosxl.net": "Sophos",
+    "avqs.mcafee.com": "McAfee",
+}
+MIN_CLIENTES_SEGURIDAD = 20   # lo hacen muchos equipos a la vez, no un único equipo infectado
+MIN_EDAD_DOMINIO_DIAS = 365   # un dominio de túnel real suele ser reciente
+
 
 # --------------------------------------------------------------------------- entidades
 
@@ -235,7 +246,8 @@ class Contexto:
         self._normal = {r: statistics.median(v) for r, v in horas.items()}
         # IPs con alguna petición permitida en el WAF
         self._waf_permitidas = {w.get("src_ip") for w in (waf or []) if w.get("action") != "blocked"}
-        self._explicadas = {i for i, a in self.alertas.items() if self._cambio_que_explica(a)}
+        self._explicadas = {i for i, a in self.alertas.items()
+                            if self._cambio_que_explica(a) or _dns_producto_seguridad(a)}
 
     @classmethod
     def desde_dataset(cls, ruta=None, alertas=None):
@@ -254,7 +266,7 @@ class Contexto:
             self._por_entidad[e].append(i)
         if t:
             self._por_hora[(alerta.get("rule_id"), t.replace(minute=0, second=0, microsecond=0))] += 1
-        if self._cambio_que_explica(alerta):
+        if self._cambio_que_explica(alerta) or _dns_producto_seguridad(alerta):
             self._explicadas.add(i)
 
     def _cambio_que_explica(self, a):
@@ -296,6 +308,25 @@ class Contexto:
 
 # --------------------------------------------------------------------------- prefiltro
 
+def _dns_producto_seguridad(a):
+    """Motivo si es la consulta DNS codificada de un producto de seguridad conocido; si no, None."""
+    if a.get("rule_id") != "UC-NET-006":
+        return None
+    ev = _ev(a)
+    dom = str(ev.get("parent_domain", "")).lower()
+    if dom not in DOMINIOS_SEGURIDAD:
+        return None
+    if [str(d).lower() for d in (a.get("entities") or {}).get("domains") or []] != [dom]:
+        return None
+    try:
+        if int(ev.get("distinct_clients", 0)) < MIN_CLIENTES_SEGURIDAD or int(ev.get("domain_age_days", 0)) < MIN_EDAD_DOMINIO_DIAS:
+            return None
+    except (TypeError, ValueError):
+        return None
+    return (f"consultas DNS codificadas de {DOMINIOS_SEGURIDAD[dom]} ({dom}): lo hacen {ev['distinct_clients']} equipos "
+            f"y el dominio tiene {ev['domain_age_days']} días; no es un túnel")
+
+
 def _waf_bloqueado(a, ctx):
     if a.get("rule_id") != "UC-WEB-001" or _ev(a).get("action") != "blocked":
         return None
@@ -318,11 +349,12 @@ def prefiltrar(alerta, contexto):
     try:
         explica = contexto._cambio_que_explica(alerta)
         ruido = None if explica else _waf_bloqueado(alerta, contexto)
-        if not explica and not ruido:
+        dns = None if (explica or ruido) else _dns_producto_seguridad(alerta)
+        if not explica and not ruido and not dns:
             _pistas_sin_cierre(alerta, contexto, salida)
             return salida
 
-        motivo = explica[1] if explica else ruido
+        motivo = explica[1] if explica else (ruido or dns)
         bloqueos = []
         calientes = contexto.entidades_calientes(alerta)
         if calientes:
@@ -339,6 +371,9 @@ def prefiltrar(alerta, contexto):
         salida.update(decision=CERRAR, motivo=motivo)
         if explica:
             salida.update(veredicto="benign_true_positive", severidad="informational", cambio=explica[0].id)
+        elif dns:
+            # Falso positivo de la regla: no hay ataque, es telemetría de un producto de seguridad.
+            salida.update(veredicto="false_positive", severidad="informational")
         else:
             # Ataque real pero sin efecto: true_positive informational, como en 01_contexto/ticket_ejemplo.json.
             # benign_true_positive es solo para actividad autorizada (politica_soc.md, apartado 1).
