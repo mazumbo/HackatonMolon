@@ -28,7 +28,7 @@ _Última actualización: 07/11/2026 23:20_
 - ⚠️ **Fusionar el [PR #18](https://github.com/mazumbo/HackatonMolon/pull/18)** (tiempo + 404) y el [PR #20](https://github.com/mazumbo/HackatonMolon/pull/20) (evaluación) antes del domingo.
 - ✅ **Ensayo con 10 alertas nuevas** con `ornith`: veredicto 7/7, todas por debajo de 60 s (`python -m eval.ensayo`). Falta repetirlo viéndolo en la UI.
 - ✅ **Evaluación de los 12 incidentes** con `ornith`: veredicto 12/12, cobertura 100 %, media 41 s y máximo 54 s (`python -m eval.evaluar`).
-- ⚠️ **Severidad del incidente 11 (Vela)**: el agente da critical y la política high (solo se filtraron códigos internos). B lo ajusta. El 10 pasa a critical (decidido 07/11).
+- ✅ **Severidad de los incidentes 10 y 11**: el 10 pasa a critical (decidido 07/11) y el 11 (Vela) sale high tras el ajuste del PR #18. Con eso, severidad 12/12.
 - 🔄 **Plan B offline**: lo prepara un compañero.
 - ✅ **Diferenciador: turno de noche.** Cifras en [`eval/TURNO_NOCHE.md`](../eval/TURNO_NOCHE.md): 8 de 12 incidentes con alertas clave fuera de horario; el ransomware espera 53,7 h (sáb 02:16 → lun 08:00).
 - ℹ️ La pasarela UAB solo ofrece el modelo `ornith` (`nemotron` no existe).
@@ -90,4 +90,4 @@ _Última actualización: 07/11/2026 23:20_
 - **07/11 noche** · Motor integrado en el agente (#13), UI con los campos nuevos (#14) y ajustes de la matriz (#15). PR #12 cerrado sin fusionar. Abierto el fix de loopback (#16).
 - **07/11 ~20:40** · Mergeados el fix de loopback (#16) y el progreso de la noche (#17).
 - **07/11 ~22:30** · Abierto el límite de tiempo por ticket (#18): 29–45 s por incidente con `ornith`. Detectado que las alertas nuevas darán 404 en la API mock.
-- **07/11 ~23:15** · Evaluación y ensayo con `ornith`: veredicto 12/12, severidad 10/12, todo < 60 s. Diferenciador: turno de noche. Incidente 10 pasa a critical.
+- **07/11 ~23:15** · Evaluación y ensayo con `ornith`: veredicto 12/12, severidad 12/12 tras ajustar el 10 y el 11, todo < 60 s salvo un pico de 56 s + 4 s del motor en el 11. Diferenciador: turno de noche. Incidente 10 pasa a critical.
