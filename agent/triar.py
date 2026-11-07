@@ -338,7 +338,27 @@ def triar(alert_id):
     return triar_grupo([alert_id])
 
 
-def _first_message(alert_ids, compact, ctx, grupo, prefilter):
+def _calendar_check(alert_ids, alerts_by_id, contexto):
+    """Quines alertes del grup cobreix un canvi aprovat, verificat pel codi (finestra, origen i abast)."""
+    if contexto is None:
+        return None
+    si, no = {}, []
+    for aid in alert_ids:
+        a = alerts_by_id.get(aid)
+        if not a:
+            continue
+        try:
+            e = contexto._cambio_que_explica(a)
+        except Exception:
+            e = None
+        if e:
+            si[aid] = getattr(e[0], "id", str(e[0]))
+        else:
+            no.append(aid)
+    return si, no
+
+
+def _first_message(alert_ids, compact, ctx, grupo, prefilter, calendar=None):
     head = (f"Tría el incidente formado por {len(alert_ids)} alertas ({', '.join(alert_ids[:6])}"
             f"{'...' if len(alert_ids) > 6 else ''}). Es UN solo ticket con TODOS esos alert_ids. "
             if len(alert_ids) > 1 else f"Tría la alerta {alert_ids[0]}. ")
@@ -353,6 +373,13 @@ def _first_message(alert_ids, compact, ctx, grupo, prefilter):
     if len(compact) > 1:
         parts.append("TODAS LAS ALERTAS DEL INCIDENTE (orden temporal):\n<untrusted_data tool=\"grupo\">\n"
                      + "\n".join(json.dumps(c, ensure_ascii=False) for c in compact) + "\n</untrusted_data>")
+    if calendar is not None:
+        si, no = calendar
+        parts.append("VERIFICACIÓN DEL CALENDARIO POR CÓDIGO (ventana, origen y alcance): "
+                     + (f"cubiertas por un cambio aprobado: {json.dumps(si)}. " if si else "ninguna alerta está cubierta por un cambio aprobado. ")
+                     + (f"NO cubiertas ({len(no)}): {', '.join(no[:12])}{'...' if len(no) > 12 else ''}. Un cambio con un título "
+                        "parecido NO autoriza estas alertas: si ocurren fuera de la ventana o desde otro origen, trátalas como "
+                        "posible ataque (true_positive), no como actividad autorizada." if no else ""))
     pistas = [p for r in (prefilter or {}).values() for p in (r.get("pistas") or [])]
     if pistas:
         parts.append("PISTAS DEL PREFILTRO (código): " + " | ".join(dict.fromkeys(pistas))[:1500])
@@ -380,7 +407,8 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
             tp = time.time()
             compact, ctx, alerts_by_id = prefetch_group(alert_ids, run, alerts_by_id)
             usage["prefetch_seconds"] = round(time.time() - tp, 1)
-            first = _first_message(alert_ids, compact, ctx, grupo, prefilter)
+            first = _first_message(alert_ids, compact, ctx, grupo, prefilter,
+                                   _calendar_check(alert_ids, alerts_by_id, contexto))
         else:
             first = f"Tría la alerta {alert_ids[0]}. Empieza con get_alert."
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": first}]
