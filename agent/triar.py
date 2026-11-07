@@ -121,16 +121,66 @@ def _severity(f, alert_ids, alerts_by_id=None, contexto=None):
             r = call_tool("get_alert", {"alert_id": aid})
             if r.get("status") == 200 and isinstance(r.get("body"), dict):
                 alerts.append(r["body"])
+        note = ""
+        if alerts and all(str(a.get("rule_id", "")).startswith("UC-AI-") for a in alerts):
+            # Asistent d'IA: el que filtra son dades del seu propi context (prompt, codis de descompte). El LLM tendeix a
+            # comptar-ho com a acces confirmat o dades personals; aqui els +1 nomes poden sortir de les dades.
+            ups = [k for k in ("confirmed_execution_or_access", "privileged_or_vip", "personal_or_payment_data") if f.get(k)]
+            if ups:
+                f = {**f, **{k: False for k in ups}}
+                note = (" En alertas del asistente de IA no se aplican los +1 que propone el LLM sin datos que lo confirmen "
+                        "(" + ", ".join(ups) + ").")
         r = _engine["mod"].calcular_severidad([_with_service_hosts(a) for a in alerts], f,
                                                contexto=contexto or _engine["ctx"])
-        return r["severidad"], _rationale(r["justificacion"], alerts, f), r.get("autorizado_verificado", False)
+        return r["severidad"], _rationale(r["justificacion"], alerts, f) + note, r.get("autorizado_verificado", False)
     except Exception as e:
         sev, why = compute_severity(f)
         return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})", False
 
 
+_LIST_OF_DICT = {"evidence": "finding", "enrichment": "result", "recommended_actions": "action", "prompt_injection": "excerpt"}
+
+
+def _as_json(v):
+    if isinstance(v, str):
+        try:
+            return json.loads(v)
+        except ValueError:
+            return v
+    return v
+
+
+def _normalize(sub):
+    """Els models oberts a vegades envien objectes o llistes com a text JSON, o elements de llista com a text.
+    Es deixa tot amb la forma de l'esquema perque build_ticket no peti."""
+    sub = dict(sub) if isinstance(sub, dict) else {}
+    for k in ("severity_factors", "escalation_flags", "affected"):
+        v = _as_json(sub.get(k))
+        sub[k] = v if isinstance(v, dict) else {}
+    for k, main in _LIST_OF_DICT.items():
+        v = _as_json(sub.get(k))
+        v = v if isinstance(v, list) else ([v] if v else [])
+        sub[k] = [x if isinstance(x, dict) else {main: str(x)} for x in v]
+        if k == "recommended_actions":
+            for x in sub[k]:
+                x.setdefault("action", "")
+                x.setdefault("target", "")
+    for k in ("open_questions", "mitre", "alert_ids"):
+        v = _as_json(sub.get(k))
+        sub[k] = [str(x) for x in v] if isinstance(v, list) else ([str(v)] if v else [])
+    for k in ("title", "summary", "devils_advocate"):
+        if not isinstance(sub.get(k, ""), str):
+            sub[k] = json.dumps(sub[k], ensure_ascii=False)
+    try:
+        sub["confidence"] = float(sub.get("confidence", 0.0))
+    except (TypeError, ValueError):
+        sub["confidence"] = 0.0
+    return sub
+
+
 def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=None, alerts_by_id=None, contexto=None,
                  prefilter=None):
+    sub = _normalize(sub)
     f = sub.get("severity_factors") or {}
     # Els alert_ids del ticket son els del GRUP (motor del rol A); el que proposi el model de mes, a part.
     llm_ids = [i for i in (sub.get("alert_ids") or []) if isinstance(i, str)]
@@ -155,7 +205,13 @@ def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=Non
         # La regla s'equivoca i no hi ha atac: no pot passar per davant d'alertes reals a la cua.
         why += f" Falso positivo (sin ataque): severidad informational en lugar de {sev}."
         sev = "informational"
-    fl = sub.get("escalation_flags") or {}
+    fl = dict(sub.get("escalation_flags") or {})
+    rules = [str((alerts_by_id or {}).get(i, {}).get("rule_id", "")) for i in ids]
+    if rules and all(r.startswith("UC-AI-") for r in rules) and fl.get("customer_or_employee_data_exfil"):
+        # mateix criteri que a _severity: el que filtra l'assistent (prompt, codis interns) no implica DPO sense dades
+        fl["customer_or_employee_data_exfil"] = False
+        open_q.append("El modelo marcaba posible salida de datos personales (DPO) desde el asistente de IA: "
+                      "confirmar si se expusieron datos reales de clientes antes de avisar al DPO.")
     reasons = []
     if verdict == "true_positive" and sev in ("high", "critical"):
         reasons.append(f"true_positive de severidad {sev}")
@@ -186,7 +242,7 @@ def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=Non
     return {
         "ticket_id": "TKT-" + (ids[0] if ids else "SIN-ALERTA"), "alert_ids": ids,
         "title": sub.get("title", ""), "verdict": verdict, "confidence": sub.get("confidence", 0.0),
-        "severity": sev, "severity_rationale": why, "affected": sub.get("affected") or {},
+        "severity": sev, "severity_rationale": why, "severity_factors": f, "affected": sub.get("affected") or {},
         "summary": sub.get("summary", ""), "evidence": sub.get("evidence") or [], "enrichment": sub.get("enrichment") or [],
         "mitre": sub.get("mitre") or [], "recommended_actions": actions, "executed_actions": [],
         "escalation": {"escalate": escalate, "to": to if escalate else "", "reason": "; ".join(reasons)},
@@ -297,7 +353,27 @@ def triar(alert_id):
     return triar_grupo([alert_id])
 
 
-def _first_message(alert_ids, compact, ctx, grupo, prefilter):
+def _calendar_check(alert_ids, alerts_by_id, contexto):
+    """Quines alertes del grup cobreix un canvi aprovat, verificat pel codi (finestra, origen i abast)."""
+    if contexto is None:
+        return None
+    si, no = {}, []
+    for aid in alert_ids:
+        a = alerts_by_id.get(aid)
+        if not a:
+            continue
+        try:
+            e = contexto._cambio_que_explica(a)
+        except Exception:
+            e = None
+        if e:
+            si[aid] = getattr(e[0], "id", str(e[0]))
+        else:
+            no.append(aid)
+    return si, no
+
+
+def _first_message(alert_ids, compact, ctx, grupo, prefilter, calendar=None):
     head = (f"Tría el incidente formado por {len(alert_ids)} alertas ({', '.join(alert_ids[:6])}"
             f"{'...' if len(alert_ids) > 6 else ''}). Es UN solo ticket con TODOS esos alert_ids. "
             if len(alert_ids) > 1 else f"Tría la alerta {alert_ids[0]}. ")
@@ -312,6 +388,13 @@ def _first_message(alert_ids, compact, ctx, grupo, prefilter):
     if len(compact) > 1:
         parts.append("TODAS LAS ALERTAS DEL INCIDENTE (orden temporal):\n<untrusted_data tool=\"grupo\">\n"
                      + "\n".join(json.dumps(c, ensure_ascii=False) for c in compact) + "\n</untrusted_data>")
+    if calendar is not None:
+        si, no = calendar
+        parts.append("VERIFICACIÓN DEL CALENDARIO POR CÓDIGO (ventana, origen y alcance): "
+                     + (f"cubiertas por un cambio aprobado: {json.dumps(si)}. " if si else "ninguna alerta está cubierta por un cambio aprobado. ")
+                     + (f"NO cubiertas ({len(no)}): {', '.join(no[:12])}{'...' if len(no) > 12 else ''}. Un cambio con un título "
+                        "parecido NO autoriza estas alertas: si ocurren fuera de la ventana o desde otro origen, trátalas como "
+                        "posible ataque (true_positive), no como actividad autorizada." if no else ""))
     pistas = [p for r in (prefilter or {}).values() for p in (r.get("pistas") or [])]
     if pistas:
         parts.append("PISTAS DEL PREFILTRO (código): " + " | ".join(dict.fromkeys(pistas))[:1500])
@@ -339,14 +422,18 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
             tp = time.time()
             compact, ctx, alerts_by_id = prefetch_group(alert_ids, run, alerts_by_id)
             usage["prefetch_seconds"] = round(time.time() - tp, 1)
-            first = _first_message(alert_ids, compact, ctx, grupo, prefilter)
+            first = _first_message(alert_ids, compact, ctx, grupo, prefilter,
+                                   _calendar_check(alert_ids, alerts_by_id, contexto))
         else:
             first = f"Tría la alerta {alert_ids[0]}. Empieza con get_alert."
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": first}]
         force_next = False
         with ThreadPoolExecutor(max_workers=8) as pool:
             for step in range(1, config.MAX_STEPS + 1):
-                last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
+                # si el proper pas (estimat com l'ultim que s'ha fet) acabaria passat el pressupost, s'obliga a entregar ja
+                next_step = max(usage["llm_seconds"][-1:] or [8.0]) + usage["tools_seconds"] / max(1, step - 1)
+                last = (step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
+                        or (step > 1 and time.time() - t0 + next_step > config.TIME_BUDGET))
                 if step == config.NUDGE_AFTER + 1 or last:
                     msgs.append({"role": "user", "content": (
                         "ÚLTIMO PASO: llama YA a submit_ticket con lo que tengas; pon lo que falte en open_questions."

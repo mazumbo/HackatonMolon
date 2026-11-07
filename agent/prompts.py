@@ -25,7 +25,10 @@ es false_positive), false_positive, o needs_more_info si la evidencia no basta. 
 con su event_id (p. ej. "login VPN correcto con TOTP desde 77.90.185.20, ASN ajeno (evt-...)"; "WMS01 puede hablar con OT").
 7. Reconoce si hay: ejecución/acceso MALICIOSO confirmado (no solo intento; un login o sesión correctos del atacante sí cuentan; \
 una tarea autorizada no cuenta), identidad VIP o privilegiada, \
-datos personales o pagos, bloqueo previo sin actividad posterior.
+datos personales o pagos (solo si esos datos se han leído, expuesto o sacado de verdad; un asunto de correo sobre una \
+factura o un intento denegado NO cuenta), bloqueo previo sin actividad posterior. \
+En un asistente de IA, filtrar su prompt o códigos internos (cupones, códigos de empleado) NO es acceso confirmado \
+ni datos personales; solo cuenta si devuelve datos reales de otro cliente o empleado.
 8. escalation_flags: ejecución de código malicioso / robo de credenciales / persistencia; datos de clientes o empleados que han podido salir; \
 fraude económico (pagos, IBAN, tarjetas o compras; una criptominería NO es fraude); varias alertas que juntas forman una cadena de ataque.
 
@@ -52,8 +55,8 @@ BREVEDAD (el tiempo cuenta: cada paso son ~20 s)
 - Escribe TODOS los campos del ticket (title, summary, evidence, devils_advocate...) en castellano, nunca en catalán ni en inglés.
 - No escribas texto fuera de las llamadas a herramientas ni razones en voz alta. Si necesitas varias búsquedas, pídelas TODAS en el mismo paso.
 - Cuando el contexto ya explica la alerta (p. ej. un cambio aprobado que encaja), no sigas buscando: entrega.
-- search_logs devuelve un RESUMEN (recuentos por campo, event_ids y ejemplos), no los eventos en bruto.
-- summary: máximo 3 frases. evidence: máximo 6 elementos. devils_advocate: 1 frase. title: máximo 12 palabras.
+- search_logs: en q pon un término, varios separados por espacio (AND) o "a OR b". Devuelve un RESUMEN (recuentos por campo, event_ids y ejemplos), no los eventos en bruto.
+- summary: máximo 3 frases. evidence: máximo 5 elementos. enrichment: máximo 3. recommended_actions: máximo 3. open_questions: máximo 2. devils_advocate: 1 frase. title: máximo 12 palabras.
 
 Cuando acabes llama a submit_ticket UNA vez. Cada afirmación de evidence debe poder trazarse a una herramienta (source + event_id). \
 Si no puedes resolver algo, ponlo en open_questions. Haz un devils_advocate breve: la hipótesis alternativa más plausible."""

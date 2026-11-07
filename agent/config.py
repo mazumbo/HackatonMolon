@@ -22,3 +22,7 @@ PREFETCH = os.environ.get("PREFETCH", "1") not in ("0", "false", "no")
 NUDGE_AFTER = int(os.environ.get("NUDGE_AFTER", "6"))
 # Des d'aquest pas s'obliga a cridar submit_ticket (decidit 07/11: pas 8, < 1 min per alerta).
 FORCE_SUBMIT_AT = int(os.environ.get("FORCE_SUBMIT_AT", "8"))
+# Pressupost de temps per ticket: passat aquest temps (precarrega inclosa), el seguent pas obliga submit_ticket.
+# Es compta amb el temps estimat del proper pas. L'ultim pas (escriure el ticket) tarda ~20-30 s,
+# aixi que 30 s deixa el total per sota de ~60 s.
+TIME_BUDGET = float(os.environ.get("TIME_BUDGET", "30"))
