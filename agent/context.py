@@ -6,6 +6,7 @@
 """
 import ipaddress
 import json
+from urllib.parse import urlparse
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 
@@ -39,6 +40,10 @@ def _plan(alert):
         if upn:
             plan.append(("get_user", {"key": upn}))
             plan.append(("search_changes", {"q": upn.split("@")[0]}))
+    for url in e.get("urls") or []:  # el servei atacat (p. ex. la botiga online) dona la criticitat de l'actiu
+        host = urlparse(url if "://" in url else "http://" + url).hostname
+        if host:
+            plan.append(("get_asset", {"key": host}))
     for ip in e.get("ips") or []:
         plan.append(("get_asset", {"key": ip}) if _internal(ip) else ("get_intel", {"indicator": ip}))
     for d in e.get("domains") or []:

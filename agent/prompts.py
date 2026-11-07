@@ -14,7 +14,7 @@ METODE (politica del SOC)
 3. Enriquir indicadors: get_intel i get_sandbox. Desconegut al TIP NO es net. 404 a sandbox NO es net.
 4. Correlacionar: search_logs de les MATEIXES entitats a +-24 h, tambe events que NO surten a related_events. \
 Si truncated=true, afina la consulta abans de concloure.
-5. Veredicte: true_positive, benign_true_positive (deteccio correcta pero activitat autoritzada, comprovant TOTES les condicions), \
+5. Veredicte (criteri del ticket_ejemplo.json oficial): un atac REAL encara que s'hagi bloquejat (p. ex. escaneig d'Internet aturat pel WAF) es true_positive amb severitat baixa (blocked_before_effect=true), NO false_positive. false_positive nomes quan la regla s'equivoca i no hi ha atac (p. ex. una newsletter legitima reportada com a phishing). Opcions: true_positive, benign_true_positive (deteccio correcta pero activitat autoritzada, comprovant TOTES les condicions), \
 false_positive, o needs_more_info si l'evidencia no basta. No tanquis per falta d'evidencia.
 6. Informa els FACTORS de severitat a severity_factors. NO calculis tu la severitat final: la calcula el codi amb la matriu.
 7. Reconeix si hi ha: execucio/acces confirmat (no nomes intent), identitat VIP o privilegiada, dades personals o pagaments, \
