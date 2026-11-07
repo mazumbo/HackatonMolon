@@ -146,6 +146,9 @@ def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=Non
         # "Autoritzat" nomes si el codi ho verifica al calendari (autorizado_verificado); si nomes ho diu el LLM, no.
         # No es pot tancar com a autoritzat, pero tampoc afirmar un atac que el model no veu: decideix una persona.
         verdict = "needs_more_info"
+        if sev in ("high", "critical"):  # el model no hi veu atac: revisio humana, pero sense ocupar la cua urgent
+            why += f" El modelo no ve ataque y falta verificarlo: severidad medium en lugar de {sev}."
+            sev = "medium"
         open_q.append("El modelo ve actividad legítima, pero el calendario de cambios no la verifica: "
                       "confirmar con el responsable antes de cerrar.")
     if verdict == "false_positive" and sev not in ("informational", "low"):

@@ -17,8 +17,9 @@ Si truncated=true, afina la consulta antes de concluir.
 5. Veredicto (criterio del ticket_ejemplo.json oficial): un ataque REAL aunque se haya bloqueado (p. ej. escaneo de Internet parado por el WAF) \
 es true_positive con severidad baja (blocked_before_effect=true), NO false_positive. false_positive solo cuando la regla se equivoca y no hay ataque \
 (p. ej. una newsletter legítima reportada como phishing). Si un cambio aprobado del calendario explica la actividad (y se cumplen ventana, origen \
-y alcance), el veredicto es benign_true_positive, no false_positive. Opciones: true_positive, benign_true_positive (detección correcta pero \
-actividad autorizada, comprobando TODAS las condiciones), false_positive, o needs_more_info si la evidencia no basta. No cierres por falta de evidencia.
+y alcance), el veredicto es benign_true_positive, no false_positive. Opciones: true_positive, benign_true_positive (SOLO si un cambio o flujo aprobado \
+lo autoriza, comprobando TODAS las condiciones; actividad normal sin cambio aprobado que la regla confunde con un ataque \
+es false_positive), false_positive, o needs_more_info si la evidencia no basta. No cierres por falta de evidencia.
 6. Informa los FACTORES de severidad en severity_factors. NO calcules tú la severidad final: la calcula el código con la matriz \
 (regla x criticidad del activo, +1/-1). En factor_evidence pon, por cada factor que marques y por la criticidad, el hecho concreto \
 con su event_id (p. ej. "login VPN correcto con TOTP desde 77.90.185.20, ASN ajeno (evt-...)"; "WMS01 puede hablar con OT").
@@ -40,7 +41,7 @@ Horas de los logs en UTC; España es UTC+1/+2.
 
 FALSOS POSITIVOS CONOCIDOS DEL DETECTOR DE TÚNEL DNS
 - Las consultas DNS largas o codificadas a servicios de reputación de antispam/antivirus son legítimas: dnsbl.spamhaus.org \
-(listas negras de correo), e5.sk (ESET LiveGrid), sophosxl.net (Sophos), avqs.mcafee.com (McAfee GTI). Sin otros indicios \
+(listas negras de correo), e5.sk (consultas de reputación del antivirus ESET LiveGrid, no un escáner), sophosxl.net (Sophos), avqs.mcafee.com (McAfee GTI). Sin otros indicios \
 en las mismas entidades, son false_positive: entrega en cuanto lo compruebes, sin más búsquedas. Un dominio desconocido \
 (p. ej. *.example que no es de Tarvia) NO entra aquí.
 
