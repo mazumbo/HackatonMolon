@@ -36,12 +36,10 @@ def _plan(alert):
     for h in e.get("hosts") or []:
         if isinstance(h, dict) and h.get("hostname"):
             plan.append(("get_asset", {"key": h["hostname"]}))
-            plan.append(("search_changes", {"q": h["hostname"]}))
     for u in e.get("users") or []:
         upn = u.get("upn") if isinstance(u, dict) else u
         if upn:
             plan.append(("get_user", {"key": upn}))
-            plan.append(("search_changes", {"q": upn.split("@")[0]}))
     for url in e.get("urls") or []:  # el servei atacat (p. ex. la botiga online) dona la criticitat de l'actiu
         host = urlparse(url if "://" in url else "http://" + url).hostname
         if host:
@@ -55,6 +53,9 @@ def _plan(alert):
         if isinstance(f, dict) and f.get("sha256"):
             plan.append(("get_intel", {"indicator": f["sha256"]}))
             plan.append(("get_sandbox", {"sha256": f["sha256"]}))
+    # El calendari es petit (~13 canvis) i molts tenen abast generic ("Todos los puestos") que no conte el hostname:
+    # el passem sencer perque el model pugui comprovar finestra, origen i abast.
+    plan.insert(0, ("search_changes", {"q": ""}))
     seen, out = set(), []
     for name, args in plan:
         k = (name, json.dumps(args, sort_keys=True))
