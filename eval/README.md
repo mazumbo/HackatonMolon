@@ -31,7 +31,14 @@ python -m eval.ensayo --puntuar out/ensayo --salida eval/RESULTADOS_ENSAYO.md
 UI_TICKETS=out/ensayo uvicorn server:app --app-dir ui --host 127.0.0.1 --port 8080
 ```
 
-## 3. Domingo 08/11 a las 9:00
+## 3. Turno de noche (diferenciador)
+
+```bash
+python -m eval.turno_noche --salida eval/TURNO_NOCHE.md            # horas que espera el SOC humano
+python -m eval.turno_noche --tickets out/eval --salida eval/TURNO_NOCHE.md  # con los segundos reales del agente
+```
+
+## 4. Domingo 08/11 a las 9:00
 
 1. Bajar el fichero de las 10 alertas del GitHub del reto y guardarlo como `vivas.jsonl` (una alerta por línea).
 2. `python -m agent.run_batch --ids-file vivas.jsonl --out out/vivas`
