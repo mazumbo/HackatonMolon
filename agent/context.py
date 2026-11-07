@@ -66,8 +66,8 @@ def _plan(alert):
 
 
 _SEV_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "informational": 4}
-MAX_DETAIL = 8      # alertes d'un grup que es passen senceres al model
-MAX_PREFETCH_GROUP = 16
+MAX_DETAIL = 6      # alertes d'un grup que es passen senceres al model
+MAX_PREFETCH_GROUP = 10
 
 
 def _compact(a):

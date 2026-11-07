@@ -26,7 +26,7 @@ con su event_id (p. ej. "login VPN correcto con TOTP desde 77.90.185.20, ASN aje
 una tarea autorizada no cuenta), identidad VIP o privilegiada, \
 datos personales o pagos, bloqueo previo sin actividad posterior.
 8. escalation_flags: ejecución de código malicioso / robo de credenciales / persistencia; datos de clientes o empleados que han podido salir; \
-fraude económico; varias alertas que juntas forman una cadena de ataque.
+fraude económico (pagos, IBAN, tarjetas o compras; una criptominería NO es fraude); varias alertas que juntas forman una cadena de ataque.
 
 REGLAS DE LA EMPRESA
 - Cuentas adm.* solo desde JUMP01. Único acceso remoto aprobado: TeamViewer Corporate gestionado por IT (AnyDesk no).

@@ -144,9 +144,10 @@ def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=Non
         verdict = "benign_true_positive"
     elif verdict == "benign_true_positive" and not authorized:
         # "Autoritzat" nomes si el codi ho verifica al calendari (autorizado_verificado); si nomes ho diu el LLM, no.
-        verdict = "true_positive"
-        open_q.append("El modelo proponía actividad autorizada, pero el calendario de cambios no lo verifica: "
-                      "se trata como true_positive hasta que una persona lo confirme.")
+        # No es pot tancar com a autoritzat, pero tampoc afirmar un atac que el model no veu: decideix una persona.
+        verdict = "needs_more_info"
+        open_q.append("El modelo ve actividad legítima, pero el calendario de cambios no la verifica: "
+                      "confirmar con el responsable antes de cerrar.")
     fl = sub.get("escalation_flags") or {}
     reasons = []
     if verdict == "true_positive" and sev in ("high", "critical"):
