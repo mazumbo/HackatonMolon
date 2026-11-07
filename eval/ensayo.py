@@ -1,6 +1,6 @@
 """Ensayo general del domingo: 10 alertas "nuevas" que la API mock NO conoce (como las de las 9:00).
 
-Copia 10 alertas reales del dataset con un alert_id nuevo (ALR-20261108-9000NN), de modo que get_alert da 404
+Copia 10 alertas reales del dataset con un alert_id nuevo (ALR-20261108-9100NN), de modo que get_alert da 404
 y el pipeline tiene que usar la alerta que le llega en el fichero, igual que el domingo.
 
   python -m eval.ensayo --preparar eval/ensayo_vivas.jsonl
@@ -39,7 +39,7 @@ def preparar(ruta):
     with open(ruta, "w", encoding="utf-8") as f:
         for k, (s, que, ver, sev) in enumerate(CASOS, 1):
             a = dict(suf[s])
-            nuevo = f"ALR-20261108-9000{k:02d}"
+            nuevo = f"ALR-20261108-9100{k:02d}"
             meta.append({"alert_id": nuevo, "origen": a["alert_id"], "que": que, "veredicto": ver, "severidad": sev})
             a["alert_id"] = nuevo
             f.write(json.dumps(a, ensure_ascii=False) + "\n")
