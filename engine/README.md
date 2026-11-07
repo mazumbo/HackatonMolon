@@ -18,7 +18,8 @@ from engine.prefiltro import Contexto, prefiltrar
 ctx = Contexto.desde_dataset()          # una vez al arrancar
 r = prefiltrar(alerta, ctx)
 if r["decision"] == "cerrar":
-    ...   # benign_true_positive, severidad informational; r["motivo"] y r["cambio"] explican por qué
+    ...   # r["veredicto"]: benign_true_positive si es un cambio aprobado (r["cambio"]),
+          # true_positive informational si es un ataque web bloqueado sin efecto; r["motivo"] explica por qué
 else:
     ...   # pasa al agente; r["pistas"] le cuenta lo que el prefiltro ha visto
 ```
