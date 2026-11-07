@@ -5,13 +5,13 @@ aviso en rojo cuando los datos traen texto escrito para manipular a la IA, botó
 y la vista **Turno de noche** (cuándo lo habría visto el SOC humano frente a la IA).
 
 **Stack:** Python + FastAPI (mismo lenguaje que la API mock del reto) y una página HTML/JS sin framework
-ni build. Nada que compilar el día de la demo.
+ni build. Nada que compilar el día de la demo. Seguridad: sin dependencias de frontend ni CDN, todo el texto de los tickets se escapa antes de pintarse (el dataset trae texto del atacante), cabeceras CSP estrictas y la API escucha en local si se arranca con `--host 127.0.0.1`.
 
 ## Arrancar
 
 ```bash
 pip install -r ui/requirements.txt
-uvicorn server:app --app-dir ui --port 8080
+uvicorn server:app --app-dir ui --host 127.0.0.1 --port 8080
 # http://localhost:8080
 ```
 

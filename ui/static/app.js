@@ -79,10 +79,10 @@ function renderList() {
     const first = t.night_shift?.first_alert_at;
     return `<li data-id="${esc(t.ticket_id)}" class="${t.ticket_id === selected ? "sel" : ""} ${t.status === "closed" ? "closed" : ""}">
       <div>${pill("sev-" + t.severity, SEV_ES[t.severity] || t.severity)} ${pill("v-" + t.verdict, VERDICT_ES[t.verdict] || t.verdict)}
-      ${t.prompt_injection.length ? pill("inj", "⚠ inyección") : ""}</div>
+      ${t.prompt_injection.length ? pill("inj", "inyección") : ""}</div>
       <div class="t-title">${esc(t.title)}</div>
       <div class="t-meta"><span>${esc(t.ticket_id)}</span><span>${t.alert_ids.length} alerta${t.alert_ids.length > 1 ? "s" : ""}</span>
-      ${first ? `<span>${fmtDT(first)}</span>` : ""}${first && isOffHours(first) ? "<span>🌙 fuera de horario</span>" : ""}</div>
+      ${first ? `<span>${fmtDT(first)}</span>` : ""}${first && isOffHours(first) ? "<span>fuera de horario</span>" : ""}</div>
     </li>`;
   }).join("") || `<li class="muted">Nada con este filtro.</li>`;
 }
@@ -107,7 +107,7 @@ function timelineHtml(alerts) {
     const head = day !== lastDay ? `<div class="tl-day">${esc(day)}</div>` : "";
     lastDay = day;
     return `${head}<div class="tl-item sev-${esc(a.severity)}"><span class="tl-time">${fmtLocal(a.created_at, { hour: "2-digit", minute: "2-digit" })}</span>
-      <span class="tl-rule">${esc(a.rule_name)}</span>${isOffHours(a.created_at) ? `<span class="tl-night">🌙 sin SOC</span>` : ""}
+      <span class="tl-rule">${esc(a.rule_name)}</span>${isOffHours(a.created_at) ? `<span class="tl-night">sin SOC</span>` : ""}
       <span class="muted mono">${esc(a.alert_id.slice(-6))}</span></div>`;
   }).join("") + `</div>`;
 }
@@ -117,7 +117,7 @@ function actionsHtml(t) {
   const pre = t.executed_actions || [];
   return `<ul>` + t.recommended_actions.map((a, i) => {
     const res = done[i];
-    const btn = res ? `<span class="done">✓ ${esc(res)}</span>` :
+    const btn = res ? `<span class="done">Hecho: ${esc(res)}</span>` :
       a.action === "close" ? "" :
       a.requires_approval ? `<button class="btn-approve" data-i="${i}">Aprobar</button>` :
       `<button class="btn-exec" data-i="${i}">Ejecutar</button>`;
@@ -148,7 +148,7 @@ function renderDetail(t) {
     <div class="d-title">${esc(t.title)}</div>
     <div class="d-sub">${esc(t.ticket_id)} · ${t.alert_ids.length} alertas agrupadas${t.escalation?.escalate ? ` · <b>Escalar a ${esc(t.escalation.to || "N2")}</b>: ${esc(t.escalation.reason || "")}` : ""}</div>
 
-    ${t.prompt_injection.length ? `<div class="injection"><h3>⚠ Intento de manipular a la IA encontrado en los datos</h3>
+    ${t.prompt_injection.length ? `<div class="injection"><h3>Intento de manipular a la IA encontrado en los datos</h3>
       <p>Este texto lo escribió el atacante dentro de la evidencia. El sistema lo trata como dato sospechoso, no como instrucción, y lo usa como indicio más.</p>
       ${t.prompt_injection.map((p) => `<blockquote>${highlightInjection(p.excerpt)}</blockquote>
         <div class="small muted">Fuente: ${esc(p.source)} · ${esc(p.event_id)} · ${esc(p.handling || "Ignorado")}</div>`).join("")}</div>` : ""}
@@ -157,7 +157,7 @@ function renderDetail(t) {
 
     ${ns && ns.gained_hours > 0 ? (() => { const w = ns.worst_alert && ns.worst_alert.wait_hours >= ns.first_wait_hours ? ns.worst_alert : { at: ns.first_alert_at, human_at: ns.human_at, alert_id: t.alert_ids[0] };
       const al = t.alerts.find((x) => x.alert_id === w.alert_id);
-      return `<div class="card"><h3>🌙 Turno de noche</h3><p>${al ? `«${esc(al.rule_name)}»` : "La alerta"} saltó el <b>${fmtDT(w.at)}</b>, con el SOC cerrado. La IA tenía el ticket en segundos; el SOC humano no lo habría visto hasta el <b>${fmtDT(w.human_at)}</b>: <b>${ns.gained_hours} h</b> antes.</p></div>`; })() : ""}
+      return `<div class="card"><h3>Turno de noche</h3><p>${al ? `«${esc(al.rule_name)}»` : "La alerta"} saltó el <b>${fmtDT(w.at)}</b>, con el SOC cerrado. La IA tenía el ticket en segundos; el SOC humano no lo habría visto hasta el <b>${fmtDT(w.human_at)}</b>: <b>${ns.gained_hours} h</b> antes.</p></div>`; })() : ""}
 
     <div class="grid2">
       <div class="card"><h3>Línea temporal</h3>${timelineHtml(t.alerts)}</div>
@@ -265,12 +265,12 @@ function renderNight() {
     // Una barra de espera por alerta: desde que salta hasta que el SOC humano abre la consola.
     (ns.alerts || []).forEach((w) => {
       const s0 = new Date(w.at).getTime(), s1 = new Date(w.human_at).getTime();
-      if (s1 > s0) svg += `<rect class="wait" x="${x(s0)}" y="${y - 5}" width="${Math.max(2, x(s1) - x(s0))}" height="10" rx="3"><title>Esperaría ${w.wait_hours} h al SOC humano</title></rect>`;
+      if (s1 > s0) svg += `<rect class="wait" x="${x(s0)}" y="${y - 5}" width="${Math.max(2, x(s1) - x(s0))}" height="10" ><title>Esperaría ${w.wait_hours} h al SOC humano</title></rect>`;
     });
-    t.alerts.forEach((al) => { svg += `<circle cx="${x(new Date(al.created_at).getTime())}" cy="${y}" r="3" fill="var(--muted)"><title>${esc(al.rule_name)} · ${fmtDT(al.created_at)}</title></circle>`; });
+    t.alerts.forEach((al) => { svg += `<rect x="${x(new Date(al.created_at).getTime()) - 2.5}" y="${y - 2.5}" width="5" height="5" fill="var(--muted)"><title>${esc(al.rule_name)} · ${fmtDT(al.created_at)}</title></rect>`; });
     const worst = ns.worst_alert && ns.worst_alert.wait_hours >= ns.first_wait_hours ? ns.worst_alert : { at: ns.first_alert_at, human_at: ns.human_at, wait_hours: ns.first_wait_hours };
     const wa = new Date(worst.at).getTime(), wh = new Date(worst.human_at).getTime();
-    svg += `<circle cx="${x(wa)}" cy="${y}" r="6" fill="var(--${t.severity === "critical" ? "crit" : "high"})"><title>IA: ticket en segundos (${fmtDT(worst.at)})</title></circle>`;
+    svg += `<rect x="${x(wa) - 6}" y="${y - 6}" width="12" height="12" fill="var(--${t.severity === "critical" ? "crit" : "high"})"><title>IA: ticket en segundos (${fmtDT(worst.at)})</title></rect>`;
     if (wh > wa) {
       svg += `<line x1="${x(wh)}" x2="${x(wh)}" y1="${y - 8}" y2="${y + 8}" stroke="var(--text)" stroke-width="2"><title>SOC humano: ${fmtDT(worst.human_at)}</title></line>`;
       svg += `<text x="${x(wh) + 5}" y="${y + 4}">+${worst.wait_hours} h</text>`;
@@ -278,7 +278,7 @@ function renderNight() {
   });
   svg += `</svg>`;
   $("#night-chart").innerHTML = svg +
-    `<div class="small muted" style="margin-top:6px">● IA detecta &nbsp; │ SOC humano lo vería &nbsp; ▬ espera &nbsp; · otras alertas del mismo incidente &nbsp; <span style="background:var(--accent);opacity:.25">&nbsp;&nbsp;&nbsp;</span> horario del SOC</div>`;
+    `<div class="small muted" style="margin-top:6px">■ IA detecta &nbsp; │ SOC humano lo vería &nbsp; ▬ espera &nbsp; · otras alertas del mismo incidente &nbsp; <span style="background:var(--accent);opacity:.25">&nbsp;&nbsp;&nbsp;</span> horario del SOC</div>`;
 }
 
 // ---------------------------------------------------------------- eventos
@@ -306,11 +306,4 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "1") showView("queue"); if (e.key === "2") showView("night"); if (e.key === "3") showView("limits");
 });
 $("#present").onclick = () => document.body.classList.toggle("present");
-$("#theme").onclick = () => {
-  const r = document.documentElement;
-  r.dataset.theme = r.dataset.theme === "light" ? "dark" : "light";
-  try { localStorage.setItem("theme", r.dataset.theme); } catch (_) {}
-};
-try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (_) {}
-
 load();

@@ -43,7 +43,17 @@ SOC_START, SOC_END = 8, 20
 CONTAINMENT = {"isolate_host", "disable_user", "revoke_sessions", "reset_password",
                "block_ioc", "purge_email", "disable_access_key"}
 
-app = FastAPI(title="Tarvia SOC · demo visual")
+app = FastAPI(title="Tarvia SOC · demo visual", docs_url=None, redoc_url=None)
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    # Solo recursos propios: sin scripts externos ni incrustación en otras páginas.
+    resp = await call_next(request)
+    resp.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    return resp
 APPROVALS_LOCAL: list[dict] = []
 
 

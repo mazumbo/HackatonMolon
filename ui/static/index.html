@@ -8,7 +8,7 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand"><span class="logo">◆</span> Tarvia SOC <span class="muted">· triaje N1 con IA</span></div>
+  <div class="brand"><span class="logo"></span> Tarvia SOC <span class="muted">· triaje N1 con IA</span></div>
   <nav class="tabs" role="tablist">
     <button class="tab active" data-view="queue">Cola</button>
     <button class="tab" data-view="night">Turno de noche</button>
@@ -16,8 +16,7 @@
   </nav>
   <div class="top-right">
     <span id="source" class="muted small"></span>
-    <button id="present" class="ghost" title="Modo presentación (P)">⛶</button>
-    <button id="theme" class="ghost" title="Cambiar tema">◐</button>
+    <button id="present" class="ghost" title="Modo presentación (P)">Presentación</button>
   </div>
 </header>
 
@@ -30,7 +29,7 @@
         <button class="chip active" data-f="all">Todos</button>
         <button class="chip" data-f="escalate">A escalar</button>
         <button class="chip" data-f="closed">Cerrados</button>
-        <button class="chip" data-f="injection">⚠ Inyección</button>
+        <button class="chip" data-f="injection">Inyección</button>
       </div>
       <ul id="ticket-list" class="ticket-list"></ul>
     </aside>
@@ -43,7 +42,7 @@
     <div class="night-head">
       <div>
         <h2>¿Cuándo lo habría visto cada uno?</h2>
-        <p class="muted">El SOC de Tarvia mira la consola de lunes a viernes de 8:00 a 20:00. De noche y en fin de semana nadie mira. Barra gris: horas que la alerta espera al SOC humano. Punto: cuando la IA ya tiene el ticket.</p>
+        <p class="muted">El SOC de Tarvia mira la consola de lunes a viernes de 8:00 a 20:00. De noche y en fin de semana nadie mira. Barra gris: horas que la alerta espera al SOC humano. Marca de color: cuando la IA ya tiene el ticket.</p>
       </div>
       <div class="big-number"><span id="gained">–</span><small>horas antes, en total</small></div>
     </div>
