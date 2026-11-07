@@ -121,9 +121,18 @@ def _severity(f, alert_ids, alerts_by_id=None, contexto=None):
             r = call_tool("get_alert", {"alert_id": aid})
             if r.get("status") == 200 and isinstance(r.get("body"), dict):
                 alerts.append(r["body"])
+        note = ""
+        if alerts and all(str(a.get("rule_id", "")).startswith("UC-AI-") for a in alerts):
+            # Asistent d'IA: el que filtra son dades del seu propi context (prompt, codis de descompte). El LLM tendeix a
+            # comptar-ho com a acces confirmat o dades personals; aqui els +1 nomes poden sortir de les dades.
+            ups = [k for k in ("confirmed_execution_or_access", "privileged_or_vip", "personal_or_payment_data") if f.get(k)]
+            if ups:
+                f = {**f, **{k: False for k in ups}}
+                note = (" En alertas del asistente de IA no se aplican los +1 que propone el LLM sin datos que lo confirmen "
+                        "(" + ", ".join(ups) + ").")
         r = _engine["mod"].calcular_severidad([_with_service_hosts(a) for a in alerts], f,
                                                contexto=contexto or _engine["ctx"])
-        return r["severidad"], _rationale(r["justificacion"], alerts, f), r.get("autorizado_verificado", False)
+        return r["severidad"], _rationale(r["justificacion"], alerts, f) + note, r.get("autorizado_verificado", False)
     except Exception as e:
         sev, why = compute_severity(f)
         return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})", False
