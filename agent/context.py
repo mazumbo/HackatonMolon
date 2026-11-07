@@ -13,6 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 from .tools import call_tool
 
 MAX_PREFETCH = 10
+# Dominis publics de Tarvia -> actiu de la CMDB que els serveix (la CMDB indexa per hostname/IP, no per domini).
+SERVICE_HOSTS = {"www.tarvia.example": "WEB-ECOM01", "tarvia.example": "WEB-ECOM01"}
 
 
 _RFC1918 = [ipaddress.ip_network(n) for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
@@ -43,7 +45,8 @@ def _plan(alert):
     for url in e.get("urls") or []:  # el servei atacat (p. ex. la botiga online) dona la criticitat de l'actiu
         host = urlparse(url if "://" in url else "http://" + url).hostname
         if host:
-            plan.append(("get_asset", {"key": host}))
+            host = SERVICE_HOSTS.get(host.lower(), host)
+            plan.append(("get_asset", {"key": host}) if not host.endswith(".example") else ("get_intel", {"indicator": host}))
     for ip in e.get("ips") or []:
         plan.append(("get_asset", {"key": ip}) if _internal(ip) else ("get_intel", {"indicator": ip}))
     for d in e.get("domains") or []:
