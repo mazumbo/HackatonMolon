@@ -79,7 +79,7 @@ function renderList() {
     const first = t.night_shift?.first_alert_at;
     return `<li data-id="${esc(t.ticket_id)}" class="${t.ticket_id === selected ? "sel" : ""} ${t.status === "closed" ? "closed" : ""}">
       <div>${pill("sev-" + t.severity, SEV_ES[t.severity] || t.severity)} ${pill("v-" + t.verdict, VERDICT_ES[t.verdict] || t.verdict)}
-      ${t.prompt_injection.length ? pill("inj", "inyección") : ""}</div>
+      ${t.prompt_injection.length ? pill("inj", "inyección") : ""}${isPrefiltered(t) ? pill("v-false_positive", "pre-filtro") : ""}</div>
       <div class="t-title">${esc(t.title)}</div>
       <div class="t-meta"><span>${esc(t.ticket_id)}</span><span>${t.alert_ids.length} alerta${t.alert_ids.length > 1 ? "s" : ""}</span>
       ${first ? `<span>${fmtDT(first)}</span>` : ""}${first && isOffHours(first) ? "<span>fuera de horario</span>" : ""}</div>
@@ -126,6 +126,58 @@ function actionsHtml(t) {
   }).join("") + pre.map((x) => `<li class="muted small">Ejecutada: ${esc(JSON.stringify(x))}</li>`).join("") + `</ul>`;
 }
 
+// ---- Campos del motor (rol A) que el agente pasa en el ticket: group, prefilter, related_alert_ids_suggested
+const MAX_UNIONES = 8;
+const list = (v) => Array.isArray(v) ? v : (v == null || v === "" ? [] : [v]);
+
+function isPrefiltered(t) {
+  return t.model === "prefiltro" || (t.prefilter && t.prefilter.decision === "cerrar");
+}
+
+function prefilterRows(p, withId) {
+  const pistas = list(p.pistas);
+  return `<tr>${withId ? `<td class="mono">${esc(String(p.alert_id || "").slice(-6))}</td>` : ""}
+    <td>${esc(p.decision === "cerrar" ? "Cerrada" : "Pasa al agente")}</td>
+    <td>${esc(p.motivo || "—")}${p.cambio ? ` <span class="muted">(${esc(p.cambio)})</span>` : ""}
+    ${pistas.length ? `<div class="small muted">${pistas.map(esc).join(" · ")}</div>` : ""}</td></tr>`;
+}
+
+function prefilterHtml(t) {
+  const p = t.prefilter;
+  if (!p || typeof p !== "object") return "";
+  if (p.decision) { // un solo resultado: ticket cerrado por el pre-filtro
+    return `<div class="card"><h3>Pre-filtro determinista</h3><table><tr><th>Decisión</th><th>Motivo</th></tr>${prefilterRows(p, false)}</table>
+      ${isPrefiltered(t) ? `<p class="small muted">Cerrado por reglas fijas, sin pasar por el modelo.</p>` : ""}</div>`;
+  }
+  // un resultado por alert_id: enseñamos solo las que tienen algo que decir
+  const rows = Object.entries(p).map(([id, r]) => ({ alert_id: id, ...(r || {}) }))
+    .filter((r) => r.motivo || list(r.pistas).length);
+  if (!rows.length) return "";
+  return `<details class="card trace"><summary>Pre-filtro por alerta (${rows.length})</summary>
+    <table><tr><th>Alerta</th><th>Decisión</th><th>Motivo y pistas</th></tr>${rows.map((r) => prefilterRows(r, true)).join("")}</table></details>`;
+}
+
+function groupHtml(t) {
+  const g = t.group;
+  if (!g || typeof g !== "object") return "";
+  const ents = list(g.entidades_clave), un = list(g.uniones);
+  const reglas = g.reglas && typeof g.reglas === "object" ? Object.entries(g.reglas).sort((a, b) => b[1] - a[1]) : [];
+  return `<div class="card"><h3>Por qué estas alertas van juntas</h3>
+    ${ents.length ? `<p class="mitre">Entidades en común: ${ents.map((e) => `<span>${esc(e)}</span>`).join("")}</p>` : ""}
+    ${reglas.length ? `<p class="small muted">Reglas: ${reglas.map(([r, n]) => `${esc(r)} ×${esc(n)}`).join(", ")}</p>` : ""}
+    ${un.length ? `<ul class="small">${un.slice(0, MAX_UNIONES).map((u) => `<li>${esc(typeof u === "string" ? u : JSON.stringify(u))}</li>`).join("")}</ul>
+      ${un.length > MAX_UNIONES ? `<p class="small muted">y ${un.length - MAX_UNIONES} uniones más</p>` : ""}` : ""}
+    ${g.grupo_id ? `<p class="small muted">Grupo ${esc(g.grupo_id)}</p>` : ""}</div>`;
+}
+
+function relatedHtml(t) {
+  const ids = list(t.related_alert_ids_suggested);
+  if (!ids.length) return "";
+  return `<div class="card"><h3>Alertas que podrían estar relacionadas</h3>
+    <p class="small muted">El agente las sugiere, pero no están dentro de este ticket. Que lo confirme una persona.</p>
+    <p class="mitre">${ids.map((id) => `<span>${esc(id)}</span>`).join("")}</p></div>`;
+}
+
 function slaHtml(t) {
   const m = SLA_MIN[t.severity];
   if (!m) return "";
@@ -155,6 +207,9 @@ function renderDetail(t) {
 
     <div class="card"><h3>Qué ha pasado</h3><p>${esc(t.summary)}</p></div>
 
+    ${prefilterHtml(t)}
+    ${groupHtml(t)}
+
     ${ns && ns.gained_hours > 0 ? (() => { const w = ns.worst_alert && ns.worst_alert.wait_hours >= ns.first_wait_hours ? ns.worst_alert : { at: ns.first_alert_at, human_at: ns.human_at, alert_id: t.alert_ids[0] };
       const al = t.alerts.find((x) => x.alert_id === w.alert_id);
       return `<div class="card"><h3>Turno de noche</h3><p>${al ? `«${esc(al.rule_name)}»` : "La alerta"} saltó el <b>${fmtDT(w.at)}</b>, con el SOC cerrado. La IA tenía el ticket en segundos; el SOC humano no lo habría visto hasta el <b>${fmtDT(w.human_at)}</b>: <b>${ns.gained_hours} h</b> antes.</p></div>`; })() : ""}
@@ -168,12 +223,14 @@ function renderDetail(t) {
       </div>
     </div>
 
-    <div class="card actions"><h3>Acciones recomendadas</h3>${actionsHtml(t)}</div>
+    ${t.recommended_actions.length || t.executed_actions.length ? `<div class="card actions"><h3>Acciones recomendadas</h3>${actionsHtml(t)}</div>` : ""}
+
+    ${relatedHtml(t)}
 
     ${t.devils_advocate ? `<div class="card devil"><h3>Abogado del diablo</h3><p>${esc(t.devils_advocate)}</p></div>` : ""}
 
-    <div class="card"><h3>Evidencias</h3><table><tr><th>Fuente</th><th>Evento</th><th>Hallazgo</th></tr>
-      ${t.evidence.map((e) => `<tr><td>${esc(e.source)}</td><td class="mono">${esc(e.event_id)}</td><td>${esc(e.finding)}</td></tr>`).join("")}</table></div>
+    ${t.evidence.length ? `<div class="card"><h3>Evidencias</h3><table><tr><th>Fuente</th><th>Evento</th><th>Hallazgo</th></tr>
+      ${t.evidence.map((e) => `<tr><td>${esc(e.source)}</td><td class="mono">${esc(e.event_id)}</td><td>${esc(e.finding)}</td></tr>`).join("")}</table></div>` : ""}
 
     ${t.enrichment.length ? `<div class="card"><h3>Enriquecimiento</h3><table><tr><th>Indicador</th><th>Tipo</th><th>Fuente</th><th>Resultado</th></tr>
       ${t.enrichment.map((e) => `<tr><td class="mono">${esc(e.indicator)}</td><td>${esc(e.type)}</td><td>${esc(e.source)}</td><td>${esc(e.result)}</td></tr>`).join("")}</table></div>` : ""}
