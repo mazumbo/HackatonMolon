@@ -59,9 +59,35 @@ def _alerts_meta(alert_ids):
     return out
 
 
+_engine = {}
+
+
+def _severity(f, alert_ids):
+    """Severitat amb el motor definitiu del rol A (engine/severidad.py): la regla i la criticitat surten de les DADES,
+    el LLM nomes pot pujar. Si el motor o el dataset no hi son, es fa servir la matriu provisional d'agent/severity.py."""
+    try:
+        if "mod" not in _engine:
+            from engine import severidad as mod
+            _engine["mod"] = mod
+            try:
+                from engine.prefiltro import Contexto
+                _engine["ctx"] = Contexto.desde_dataset()
+            except Exception:  # sense calendari/WAF: el motor funciona igual, sense verificar autoritzacions
+                _engine["ctx"] = None
+        alerts = []
+        for aid in alert_ids:
+            r = call_tool("get_alert", {"alert_id": aid})
+            if r.get("status") == 200 and isinstance(r.get("body"), dict):
+                alerts.append(r["body"])
+        return _engine["mod"].compute_severity(f, alertas=alerts, contexto=_engine["ctx"])
+    except Exception as e:
+        sev, why = compute_severity(f)
+        return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})"
+
+
 def build_ticket(sub, trace, seconds, usage, inj_hits):
     f = sub.get("severity_factors") or {}
-    sev, why = compute_severity(f)
+    sev, why = _severity(f, sub.get("alert_ids") or [])
     verdict = sub.get("verdict", "needs_more_info")
     if f.get("authorized_flow") and verdict == "true_positive":
         verdict = "benign_true_positive"
