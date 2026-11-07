@@ -90,9 +90,10 @@ def puntuar(tickets, inc, ben):
         ts = {id(t): t for a in ids for t in por_alerta.get(a, [])}.values()
         ts = sorted(ts, key=lambda t: -len(set(t.get("alert_ids") or []) & ids))
         principal = ts[0] if ts else None
-        cubiertas = {a for a in ids for t in por_alerta.get(a, []) if t.get("verdict") in ATAQUE}
+        cubiertas = {a for a in ids if por_alerta.get(a)}  # en algún ticket, sea cual sea el veredicto
+        de_ataque = {a for a in ids for t in por_alerta.get(a, []) if t.get("verdict") in ATAQUE}
         cerradas = sorted({a for a in ids for t in por_alerta.get(a, []) if t.get("verdict") in NO_ATAQUE}
-                          - cubiertas)
+                          - de_ataque)
         segs = [float(t.get("triage_seconds") or 0) for t in ts if t.get("model") != "prefiltro"]
         tok = sum((t.get("usage") or {}).get("input_tokens", 0) + (t.get("usage") or {}).get("output_tokens", 0)
                   for t in ts)
