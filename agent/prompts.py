@@ -19,8 +19,11 @@ es true_positive con severidad baja (blocked_before_effect=true), NO false_posit
 (p. ej. una newsletter legítima reportada como phishing). Si un cambio aprobado del calendario explica la actividad (y se cumplen ventana, origen \
 y alcance), el veredicto es benign_true_positive, no false_positive. Opciones: true_positive, benign_true_positive (detección correcta pero \
 actividad autorizada, comprobando TODAS las condiciones), false_positive, o needs_more_info si la evidencia no basta. No cierres por falta de evidencia.
-6. Informa los FACTORES de severidad en severity_factors. NO calcules tú la severidad final: la calcula el código con la matriz.
-7. Reconoce si hay: ejecución/acceso MALICIOSO confirmado (no solo intento; una tarea autorizada no cuenta), identidad VIP o privilegiada, \
+6. Informa los FACTORES de severidad en severity_factors. NO calcules tú la severidad final: la calcula el código con la matriz \
+(regla x criticidad del activo, +1/-1). En factor_evidence pon, por cada factor que marques y por la criticidad, el hecho concreto \
+con su event_id (p. ej. "login VPN correcto con TOTP desde 77.90.185.20, ASN ajeno (evt-...)"; "WMS01 puede hablar con OT").
+7. Reconoce si hay: ejecución/acceso MALICIOSO confirmado (no solo intento; un login o sesión correctos del atacante sí cuentan; \
+una tarea autorizada no cuenta), identidad VIP o privilegiada, \
 datos personales o pagos, bloqueo previo sin actividad posterior.
 8. escalation_flags: ejecución de código malicioso / robo de credenciales / persistencia; datos de clientes o empleados que han podido salir; \
 fraude económico; varias alertas que juntas forman una cadena de ataque.

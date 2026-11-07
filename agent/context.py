@@ -65,6 +65,57 @@ def _plan(alert):
     return out[:MAX_PREFETCH]
 
 
+_SEV_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "informational": 4}
+MAX_DETAIL = 8      # alertes d'un grup que es passen senceres al model
+MAX_PREFETCH_GROUP = 16
+
+
+def _compact(a):
+    """Una linia per alerta: regla, hora, severitat i entitats (sense textos lliures, que pot escriure l'atacant)."""
+    e = a.get("entities") or {}
+    ents = []
+    for k, v in e.items():
+        for x in (v if isinstance(v, list) else [v]):
+            if isinstance(x, dict):
+                x = x.get("hostname") or x.get("upn") or x.get("sha256") or x.get("name") or x.get("customer_id") or \
+                    x.get("identity") or ""
+            if x:
+                ents.append(f"{k}:{str(x)[:70]}")
+    return {"alert_id": a.get("alert_id"), "created_at": a.get("created_at"), "rule_id": a.get("rule_id"),
+            "rule_name": a.get("rule_name"), "severity": a.get("severity"), "entities": ents[:8]}
+
+
+def prefetch_group(alert_ids, run_tool, alerts=None):
+    """Com prefetch() pero per a un grup d'alertes (un incident = un ticket).
+    alerts: {alert_id: dict} si ja es tenen (motor); si no, es demanen a l'API.
+    Retorna (llista compacta de TOTES les alertes, [(eina, args, text)] amb el detall de les MAX_DETAIL mes rellevants
+    i el context de les seves entitats)."""
+    alerts = dict(alerts or {})
+    falten = [i for i in alert_ids if i not in alerts]
+    if falten:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for i, r in zip(falten, ex.map(lambda i: call_tool("get_alert", {"alert_id": i}), falten)):
+                if r.get("status") == 200 and isinstance(r.get("body"), dict):
+                    alerts[i] = r["body"]
+    ordre = sorted((i for i in alert_ids if i in alerts),
+                   key=lambda i: (_SEV_RANK.get(alerts[i].get("severity"), 5), alerts[i].get("created_at") or ""))
+    detall = ordre[:MAX_DETAIL]
+    calls = [("get_alert", {"alert_id": i}) for i in detall]
+    plan = [("search_changes", {"q": ""})]
+    for i in detall:
+        plan += [c for c in _plan(alerts[i]) if c[0] != "search_changes"]
+    seen = set()
+    for n, a in plan:
+        k = (n, json.dumps(a, sort_keys=True))
+        if k not in seen and len(calls) < MAX_DETAIL + MAX_PREFETCH_GROUP:
+            seen.add(k)
+            calls.append((n, a))
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        texts = list(ex.map(lambda c: run_tool(c[0], c[1]), calls))
+    compact = [_compact(alerts[i]) for i in alert_ids if i in alerts]
+    return compact, [(n, a, t) for (n, a), t in zip(calls, texts)], alerts
+
+
 def prefetch(alert_id, run_tool):
     """Retorna (alert_dict, [(eina, args, text_per_al_model)]). run_tool(name, args) -> text."""
     first = call_tool("get_alert", {"alert_id": alert_id})
