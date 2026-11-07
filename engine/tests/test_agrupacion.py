@@ -95,3 +95,16 @@ def test_contra_los_12_incidentes():
     filas, media = evaluar(grupos, incidentes_de_referencia(md, todas))
     assert media["completitud"] >= 0.90 and media["pureza"] >= 0.95, (media, filas)
     assert filas[2]["completitud"] == 1.0  # el ransomware de 9 días, entero, gracias al hash repetido
+
+
+def test_ip_de_loopback_no_une_alertas():
+    from engine.agrupacion import Pivotes, agrupar
+
+    def alerta(aid, t, host, ip):
+        return {"alert_id": aid, "created_at": t, "rule_id": "UC-X-001",
+                "entities": {"hosts": [{"hostname": host, "ip": "10.1.1.%d" % (len(aid))}], "ips": [ip]}}
+
+    al = [alerta("A1", "2026-10-05T10:00:00.000Z", "H1", "127.0.0.2"),
+          alerta("A22", "2026-10-06T10:00:00.000Z", "H2", "127.0.0.2")]
+    grupos = agrupar(al, Pivotes(), {})
+    assert len(grupos) == 2

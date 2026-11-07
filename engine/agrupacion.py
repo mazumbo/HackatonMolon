@@ -57,6 +57,16 @@ def _privada(ip):
         return True  # rangos como "10.40.16.21-26": se tratan como internos
 
 
+def _sin_significado(ip):
+    """Loopback, enlace local, reservada, sin especificar o multicast (p. ej. 127.0.0.2 de las respuestas DNSBL):
+    no identifica a ningún equipo y nunca debe unir alertas."""
+    try:
+        a = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return a.is_loopback or a.is_link_local or a.is_reserved or a.is_unspecified or a.is_multicast
+
+
 def es_fuerte(entidad):
     tipo, _, valor = entidad.partition(":")
     return tipo in _FUERTES or tipo == "fam" or (tipo == "ip" and not _privada(valor))
@@ -116,6 +126,8 @@ class Pivotes:
         return cls(eventos, ip_a_equipo, dict(identidades))
 
     def _de_ip(self, ip):
+        if _sin_significado(ip):
+            return set()
         out = {f"ip:{ip}"}
         if ip in self.ip_a_equipo:
             out.add(f"host:{self.ip_a_equipo[ip]}")
@@ -156,7 +168,7 @@ class Pivotes:
 
     def entidades(self, alerta):
         """Entidades de la alerta + las de sus eventos de log + pivotes por IP + familia de dominios."""
-        e = set(entidades_alerta(alerta))
+        e = {x for x in entidades_alerta(alerta) if not (x.startswith("ip:") and _sin_significado(x[3:]))}
         for d in (alerta.get("entities") or {}).get("domains") or []:
             e.add("dom:" + str(d).lower())
         for x in [x for x in e if x.startswith("ip:")]:
