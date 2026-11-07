@@ -25,7 +25,5 @@ $env:UI_TICKETS = "demo\vivo\tickets"
 uvicorn server:app --app-dir ui --port 8080
 ```
 
-## Plan B (sin red o con la pasarela del LLM caída)
-- **Graba con lo ya calculado.** En cuanto termine el paso 2, haz commit de `demo\vivo\tickets\`. La UI solo lee esos ficheros, no llama al LLM: si después falla la red o la pasarela, la demo sigue igual con `UI_TICKETS=demo\vivo\tickets`.
-- **Si la pasarela falla en el paso 2**, el prefiltro sigue cerrando sus alertas sin LLM, y las demás salen como "Triaje automático fallido" con escalado a N2 (no se pierde ninguna). Vuelve a lanzar el paso 2 cuando la pasarela responda; solo hay que repetir las que fallaron.
-- **Ensayo de reserva:** `demo\ensayo\tickets\` tiene los tickets de 10 alertas del dataset con ids nuevos (8 incidentes reales + SCCM + WAF), generados con `python -m agent.ensayo`. Sirven para grabar el vídeo si el domingo no hay forma de triar las nuevas.
+## Plan B
+Lo prepara otro miembro del equipo; aquí solo el camino normal.
