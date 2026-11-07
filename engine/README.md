@@ -58,10 +58,13 @@ Sigue el apartado 2 de `politica_soc.md` con estas reglas de seguridad:
 - **El LLM puede subir, nunca bajar.** La severidad de la regla y la criticidad salen de los datos (`activos.csv` y `usuarios.csv`). El LLM solo puede proponer valores más altos. El -1 por "bloqueado" solo se aplica si un campo estructurado lo dice (`action`, `edr_action`, `executed`...) y no hay actividad posterior en las entidades.
 - **"Flujo autorizado" solo si lo verifica el calendario.** Si solo lo dice el LLM, se ignora y queda un aviso. El agente debería usar `autorizado_verificado` para decidir si el veredicto es `benign_true_positive`.
 - **Lo que no está en el inventario cuenta como criticidad alta**, y la justificación lo dice.
+- El MFA aprobado en una VPN o un inicio de sesión (`mfa`, `mfa_result`, `final_result`) cuenta como acceso confirmado.
 - Las personas cuentan como criticidad media y las cuentas de servicio como alta. VIP, administradores y privilegiados suben un nivel.
 - Como mucho, un nivel arriba o abajo en total.
 
-Resultado sobre los 12 incidentes de `docs/incidentes_localizados.md`: 9 salen critical, 2 high y 1 medium (el #5, Logisoft, porque su regla es medium; el agente puede subirlo).
+Resultado sobre los 12 incidentes de `docs/incidentes_localizados.md`: 9 salen critical y 3 high (los #5, #10 y #11). La matriz sigue `politica_soc.md` al pie de la letra; el documento se corrigió donde estaba desfasado (#8, #9 y #12 son critical por el +1 de acceso o ejecución confirmados).
+
+Solo hay una excepción al "un nivel como mucho", y solo se aplica si el código la verifica: un **ataque web bloqueado por el WAF sin ninguna petición permitida de esa IP** es `informational` aunque el activo sea crítico. Es lo que hace el `01_contexto/ticket_ejemplo.json` oficial (regla low x activo crítico = medium, -1 por el bloqueo, y "ruta inexistente": informational). Para que se aplique hay que pasar `contexto=` a `calcular_severidad`.
 
 # Agrupación en incidentes (`agrupacion.py`)
 
