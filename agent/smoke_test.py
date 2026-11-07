@@ -20,6 +20,9 @@ def main():
     t = triar(aid)
     print(json.dumps({k: t.get(k) for k in ("ticket_id", "verdict", "severity", "severity_rationale", "confidence",
                                          "escalation", "triage_seconds", "usage")}, indent=2, ensure_ascii=False))
+    u = t.get("usage", {})
+    print(f"temps: total {t.get('triage_seconds')} s | precarrega {u.get('prefetch_seconds')} s | "
+          f"LLM per pas {u.get('llm_seconds')} | eines {u.get('tools_seconds')} s")
     print("eines usades:", [x["tool"] for x in t.get("tool_trace", [])])
     print("resum:", t.get("summary"))
 

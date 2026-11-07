@@ -20,3 +20,12 @@ UI_TICKETS=out/tickets/ uvicorn server:app --app-dir ui --port 8080
 - Els noms dels camps de l'alerta (`created_at`, `rule_id`, `rule_name`, `severity`, `source_product`) es llegeixen amb alternatives; verificar-los contra `alertas.jsonl`.
 - Falta: pre-filtre i agrupacio (rol A), playbooks per regla, deteccio d'OT a partir de la zona de la CMDB, validacio completa contra el JSON Schema.
 - El valor de criticitat de la CMDB s'ha de confirmar (`activos.csv`); un valor desconegut es tracta com a `medium`.
+
+## Velocitat (07/11)
+- `PREFETCH=1`: el codi demana en paral·lel l'alerta, actius, usuaris, intel i canvis abans del primer pas del LLM.
+- `search_logs` retorna un resum (recomptes per camp, event_ids, 5 exemples) en lloc dels esdeveniments en brut.
+- `LLM_NO_THINK=1`: `chat_template_kwargs.enable_thinking=false` (ornith l'accepta; 3,4 s -> 1,4 s en una resposta de prova).
+- `MAX_OUTPUT_TOKENS=1500`, resum curt al prompt, eines del mateix pas en paral·lel.
+- `run_batch --workers 3`: diverses alertes alhora.
+- `FORCE_SUBMIT_AT=8`: des del pas 8 el model ha de cridar `submit_ticket` (avis previ al pas 7).
+- `smoke_test` mostra el temps per pas del LLM, de la precarrega i de les eines.

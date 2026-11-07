@@ -15,20 +15,20 @@ def _tool(name, desc, props, required):
 
 _S = {"type": "string"}
 TOOLS = [
-    _tool("get_alert", "Detall d'una alerta pel seu alert_id.", {"alert_id": _S}, ["alert_id"]),
-    _tool("get_asset", "CMDB: criticitat, servei, propietari, vulnerabilitats. Cerca per hostname o IP. "
-          "status 404 = no es a la CMDB (desconegut, NO vol dir benigne).", {"key": _S}, ["key"]),
-    _tool("get_user", "Directori: rol, privilegis, VIP, manager, esdeveniments de RRHH. UPN o username.",
+    _tool("get_alert", "Detalle de una alerta por su alert_id.", {"alert_id": _S}, ["alert_id"]),
+    _tool("get_asset", "CMDB: criticidad, servicio, propietario, vulnerabilidades. Busca por hostname o IP. "
+          "status 404 = no está en la CMDB (desconocido, NO significa benigno).", {"key": _S}, ["key"]),
+    _tool("get_user", "Directorio: rol, privilegios, VIP, manager, eventos de RRHH. UPN o username.",
           {"key": _S}, ["key"]),
-    _tool("search_logs", "Cerca de text lliure en una font de logs (proxy, dns, edr_events, idp_signins, waf, email, "
+    _tool("search_logs", "Búsqueda de texto libre en una fuente de logs (proxy, dns, edr_events, idp_signins, waf, email, "
           "ecom_auth, firewall, email_clicks, vpn, ai_gateway, ecom_account, cloudtrail, sql_audit, dlp, idp_audit, "
           "cicd_builds, ad_events). desde/hasta en ISO 8601 UTC. Si truncated=true, afina la consulta.",
           {"source": _S, "q": _S, "desde": _S, "hasta": _S, "limit": {"type": "integer"}}, ["source"]),
-    _tool("get_intel", "TIP intern + GeoIP/ASN per a una IP, domini o hash. tip=null NO vol dir net.",
+    _tool("get_intel", "TIP interno + GeoIP/ASN para una IP, dominio o hash. tip=null NO significa limpio.",
           {"indicator": _S}, ["indicator"]),
-    _tool("get_sandbox", "Informe de sandbox per sha256. 404 = no s'ha enviat, no vol dir net.",
+    _tool("get_sandbox", "Informe de sandbox por sha256. 404 = no se ha enviado, no significa limpio.",
           {"sha256": _S}, ["sha256"]),
-    _tool("search_changes", "Calendari de canvis i fluxos aprovats (cerca per text: host, usuari, ticket...).",
+    _tool("search_changes", "Calendario de cambios y flujos aprobados (búsqueda por texto: host, usuario, ticket...; q vacío = todos).",
           {"q": _S}, []),
 ]
 
@@ -67,7 +67,7 @@ def call_tool(name, args):
     if "limit" in params:
         params["limit"] = max(1, min(int(params["limit"]), 200))
     elif name == "search_logs":
-        params["limit"] = 50
+        params["limit"] = 200  # el model en rep un resum (context.summarize_logs), no els 200 en brut
     try:
         r = requests.get(url, params=params, timeout=20)
     except requests.RequestException as e:
@@ -83,6 +83,6 @@ def format_for_model(name, result):
     """Resultat en un bloc delimitat: son DADES, mai instruccions."""
     text = json.dumps(result, ensure_ascii=False)
     if len(text) > MAX_TOOL_CHARS:
-        text = text[:MAX_TOOL_CHARS] + f" ...[TALLAT a {MAX_TOOL_CHARS} caracters; afina la consulta]"
+        text = text[:MAX_TOOL_CHARS] + f" ...[CORTADO a {MAX_TOOL_CHARS} caracteres; afina la consulta]"
     text = text.replace("</untrusted_data>", "<\\/untrusted_data>")
     return f'<untrusted_data tool="{name}">\n{text}\n</untrusted_data>'

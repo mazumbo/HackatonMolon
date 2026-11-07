@@ -2,6 +2,7 @@
 Escriu out/tickets/<id>.json (la UI el llegeix amb UI_TICKETS=out/tickets/)."""
 import argparse
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
@@ -15,6 +16,7 @@ def main():
     ap.add_argument("--ids-file", help="JSONL amb un camp alert_id per linia")
     ap.add_argument("--limit", type=int, default=10)
     ap.add_argument("--out", default="out/tickets")
+    ap.add_argument("--workers", type=int, default=3, help="alertes en paral·lel (compte amb el limit de la passarela)")
     a = ap.parse_args()
     if a.ids_file:
         with open(a.ids_file, encoding="utf-8") as f:
@@ -24,14 +26,16 @@ def main():
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     tot_in = tot_out = 0
-    for aid in ids[: a.limit]:
-        t = triar(aid)
-        tmp = out / f"{aid}.json.tmp"
-        tmp.write_text(json.dumps(t, ensure_ascii=False, indent=2), encoding="utf-8")
-        tmp.replace(out / f"{aid}.json")
-        u = t.get("usage", {})
-        tot_in, tot_out = tot_in + u.get("input_tokens", 0), tot_out + u.get("output_tokens", 0)
-        print(f"{aid}: {t['verdict']} / {t['severity']} / {t['triage_seconds']}s")
+    with ThreadPoolExecutor(max_workers=max(1, a.workers)) as ex:
+        futs = {ex.submit(triar, aid): aid for aid in ids[: a.limit]}
+        for fut in as_completed(futs):
+            aid, t = futs[fut], fut.result()
+            tmp = out / f"{aid}.json.tmp"
+            tmp.write_text(json.dumps(t, ensure_ascii=False, indent=2), encoding="utf-8")
+            tmp.replace(out / f"{aid}.json")
+            u = t.get("usage", {})
+            tot_in, tot_out = tot_in + u.get("input_tokens", 0), tot_out + u.get("output_tokens", 0)
+            print(f"{aid}: {t['verdict']} / {t['severity']} / {t['triage_seconds']}s")
     print(f"tokens totals: in={tot_in} out={tot_out}")
 
 
