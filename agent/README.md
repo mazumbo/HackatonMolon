@@ -27,4 +27,5 @@ UI_TICKETS=out/tickets/ uvicorn server:app --app-dir ui --port 8080
 - `LLM_NO_THINK=1`: `chat_template_kwargs.enable_thinking=false` (ornith l'accepta; 3,4 s -> 1,4 s en una resposta de prova).
 - `MAX_OUTPUT_TOKENS=1500`, resum curt al prompt, eines del mateix pas en paral·lel.
 - `run_batch --workers 3`: diverses alertes alhora.
+- `FORCE_SUBMIT_AT=8`: des del pas 8 el model ha de cridar `submit_ticket` (avis previ al pas 7).
 - `smoke_test` mostra el temps per pas del LLM, de la precarrega i de les eines.

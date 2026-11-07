@@ -223,7 +223,7 @@ def triar(alert_id):
         nudged = False
         with ThreadPoolExecutor(max_workers=8) as pool:
             for step in range(1, config.MAX_STEPS + 1):
-                last = step == config.MAX_STEPS
+                last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
                 if step == config.NUDGE_AFTER + 1 or last:
                     msgs.append({"role": "user", "content": (
                         "ULTIM PAS: crida ARA submit_ticket amb el que tinguis; posa el que falti a open_questions."
