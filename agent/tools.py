@@ -67,7 +67,7 @@ def call_tool(name, args):
     if "limit" in params:
         params["limit"] = max(1, min(int(params["limit"]), 200))
     elif name == "search_logs":
-        params["limit"] = 50
+        params["limit"] = 200  # el model en rep un resum (context.summarize_logs), no els 200 en brut
     try:
         r = requests.get(url, params=params, timeout=20)
     except requests.RequestException as e:

@@ -35,5 +35,10 @@ Hores dels logs en UTC; Espanya es UTC+1/+2.
 CONTENCIO (nomes proposar). Accions possibles: isolate_host, disable_user, revoke_sessions, reset_password, block_ioc, \
 purge_email, disable_access_key. No bloquejar globalment serveis d'us dual (mega.nz, AnyDesk) sense N2.
 
+BREVETAT (el temps compta: cada pas son ~20 s)
+- No escriguis text fora de les crides a eines ni raonis en veu alta. Si necessites diverses cerques, demana-les TOTES al mateix pas.
+- search_logs torna un RESUM (recomptes per camp, event_ids i exemples), no els esdeveniments en brut.
+- summary: maxim 3 frases. evidence: maxim 6 elements. devils_advocate: 1 frase. title: maxim 12 paraules.
+
 Quan acabis crida a submit_ticket UNA vegada. Cada afirmacio de evidence ha de poder-se traçar a una eina (source + event_id). \
 Si no pots resoldre alguna cosa, posa-ho a open_questions. Fes un devils_advocate breu: la hipotesi alternativa mes plausible."""
