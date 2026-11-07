@@ -1,6 +1,7 @@
 """Eines de NOMES LECTURA sobre la API mock. No hi ha cap POST (ni contencio ni aprovacions)."""
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import quote
 
 import requests
@@ -63,8 +64,9 @@ def _search_logs_multi(args):
     if " OR " in q:
         parts = [p.strip() for p in q.split(" OR ") if p.strip()]
         items, seen, trunc, status = [], set(), False, 200
-        for p in parts[:6]:
-            r = _search_logs_multi({**args, "q": p})
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            results = list(ex.map(lambda p: _search_logs_multi({**args, "q": p}), parts[:6]))
+        for r in results:
             b = r.get("body") if isinstance(r.get("body"), dict) else {}
             status = r.get("status", status)
             trunc = trunc or bool(b.get("truncated"))
@@ -79,8 +81,9 @@ def _search_logs_multi(args):
         return _call(*PATHS["search_logs"], args)
     # es demana cada terme i es filtra a partir del mes selectiu (menys resultats, preferint no truncat)
     best = None
-    for t in terms[:4]:
-        r = _call(*PATHS["search_logs"], {**args, "q": t})
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        results = list(ex.map(lambda t: _call(*PATHS["search_logs"], {**args, "q": t}), terms[:4]))
+    for t, r in zip(terms[:4], results):
         b = r.get("body")
         if not isinstance(b, dict) or not isinstance(b.get("items"), list):
             continue

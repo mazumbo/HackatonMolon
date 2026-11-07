@@ -129,8 +129,49 @@ def _severity(f, alert_ids, alerts_by_id=None, contexto=None):
         return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})", False
 
 
+_LIST_OF_DICT = {"evidence": "finding", "enrichment": "result", "recommended_actions": "action", "prompt_injection": "excerpt"}
+
+
+def _as_json(v):
+    if isinstance(v, str):
+        try:
+            return json.loads(v)
+        except ValueError:
+            return v
+    return v
+
+
+def _normalize(sub):
+    """Els models oberts a vegades envien objectes o llistes com a text JSON, o elements de llista com a text.
+    Es deixa tot amb la forma de l'esquema perque build_ticket no peti."""
+    sub = dict(sub) if isinstance(sub, dict) else {}
+    for k in ("severity_factors", "escalation_flags", "affected"):
+        v = _as_json(sub.get(k))
+        sub[k] = v if isinstance(v, dict) else {}
+    for k, main in _LIST_OF_DICT.items():
+        v = _as_json(sub.get(k))
+        v = v if isinstance(v, list) else ([v] if v else [])
+        sub[k] = [x if isinstance(x, dict) else {main: str(x)} for x in v]
+        if k == "recommended_actions":
+            for x in sub[k]:
+                x.setdefault("action", "")
+                x.setdefault("target", "")
+    for k in ("open_questions", "mitre", "alert_ids"):
+        v = _as_json(sub.get(k))
+        sub[k] = [str(x) for x in v] if isinstance(v, list) else ([str(v)] if v else [])
+    for k in ("title", "summary", "devils_advocate"):
+        if not isinstance(sub.get(k, ""), str):
+            sub[k] = json.dumps(sub[k], ensure_ascii=False)
+    try:
+        sub["confidence"] = float(sub.get("confidence", 0.0))
+    except (TypeError, ValueError):
+        sub["confidence"] = 0.0
+    return sub
+
+
 def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=None, alerts_by_id=None, contexto=None,
                  prefilter=None):
+    sub = _normalize(sub)
     f = sub.get("severity_factors") or {}
     # Els alert_ids del ticket son els del GRUP (motor del rol A); el que proposi el model de mes, a part.
     llm_ids = [i for i in (sub.get("alert_ids") or []) if isinstance(i, str)]
@@ -346,7 +387,10 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
         force_next = False
         with ThreadPoolExecutor(max_workers=8) as pool:
             for step in range(1, config.MAX_STEPS + 1):
-                last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS) or time.time() - t0 > config.TIME_BUDGET
+                # si el proper pas (estimat com l'ultim que s'ha fet) acabaria passat el pressupost, s'obliga a entregar ja
+                next_step = max(usage["llm_seconds"][-1:] or [8.0]) + usage["tools_seconds"] / max(1, step - 1)
+                last = (step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
+                        or (step > 1 and time.time() - t0 + next_step > config.TIME_BUDGET))
                 if step == config.NUDGE_AFTER + 1 or last:
                     msgs.append({"role": "user", "content": (
                         "ÚLTIMO PASO: llama YA a submit_ticket con lo que tengas; pon lo que falte en open_questions."
