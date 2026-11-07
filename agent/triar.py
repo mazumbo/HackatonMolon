@@ -205,7 +205,13 @@ def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=Non
         # La regla s'equivoca i no hi ha atac: no pot passar per davant d'alertes reals a la cua.
         why += f" Falso positivo (sin ataque): severidad informational en lugar de {sev}."
         sev = "informational"
-    fl = sub.get("escalation_flags") or {}
+    fl = dict(sub.get("escalation_flags") or {})
+    rules = [str((alerts_by_id or {}).get(i, {}).get("rule_id", "")) for i in ids]
+    if rules and all(r.startswith("UC-AI-") for r in rules) and fl.get("customer_or_employee_data_exfil"):
+        # mateix criteri que a _severity: el que filtra l'assistent (prompt, codis interns) no implica DPO sense dades
+        fl["customer_or_employee_data_exfil"] = False
+        open_q.append("El modelo marcaba posible salida de datos personales (DPO) desde el asistente de IA: "
+                      "confirmar si se expusieron datos reales de clientes antes de avisar al DPO.")
     reasons = []
     if verdict == "true_positive" and sev in ("high", "critical"):
         reasons.append(f"true_positive de severidad {sev}")
