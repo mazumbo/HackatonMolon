@@ -79,16 +79,20 @@ def _severity(f, alert_ids):
             r = call_tool("get_alert", {"alert_id": aid})
             if r.get("status") == 200 and isinstance(r.get("body"), dict):
                 alerts.append(r["body"])
-        return _engine["mod"].compute_severity(f, alertas=alerts, contexto=_engine["ctx"])
+        r = _engine["mod"].calcular_severidad(alerts, f, contexto=_engine["ctx"])
+        return r["severidad"], r["justificacion"], r.get("autorizado_verificado", False)
     except Exception as e:
         sev, why = compute_severity(f)
-        return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})"
+        return sev, why + f" (matriz provisional: motor del rol A no disponible: {type(e).__name__})", False
 
 
 def build_ticket(sub, trace, seconds, usage, inj_hits):
     f = sub.get("severity_factors") or {}
-    sev, why = _severity(f, sub.get("alert_ids") or [])
+    sev, why, authorized = _severity(f, sub.get("alert_ids") or [])
     verdict = sub.get("verdict", "needs_more_info")
+    if authorized and verdict in ("true_positive", "false_positive"):
+        # politica_soc.md: alerta explicada per un canvi aprovat (verificat pel codi) -> benign_true_positive
+        verdict = "benign_true_positive"
     if f.get("authorized_flow") and verdict == "true_positive":
         verdict = "benign_true_positive"
     fl = sub.get("escalation_flags") or {}
