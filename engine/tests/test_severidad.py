@@ -89,3 +89,20 @@ def test_compatible_con_el_agente_de_b():
 def test_sin_datos_no_rompe():
     assert sev([])["severidad"] in ("medium", "high")
     assert sev([{"alert_id": "X", "entities": None, "evidence": "texto"}])["severidad"]
+
+
+def test_ataque_web_bloqueado_oportunista_es_informational_aunque_el_activo_sea_critico():
+    """01_contexto/ticket_ejemplo.json: regla low x activo crítico = medium, -1 por bloqueo -> informational."""
+    a = {"alert_id": "W1", "created_at": "2026-10-06T10:00:00.000Z", "rule_id": "UC-WEB-001", "severity": "low",
+         "entities": {"ips": ["198.18.5.5"]}, "evidence": {"action": "blocked"}}
+    ctx = Contexto([a], [], waf=[])
+    assert sev([a], {"asset_criticality": "critical"}, ctx)["severidad"] == "informational"
+    # si esa IP tuvo alguna petición permitida, ya no es oportunista: aplica la matriz (medium - 1 = low)
+    ctx2 = Contexto([a], [], waf=[{"src_ip": "198.18.5.5", "action": "allowed"}])
+    assert sev([a], {"asset_criticality": "critical"}, ctx2)["severidad"] == "low"
+
+
+def test_vpn_con_mfa_aprobado_cuenta_como_acceso_confirmado():
+    a = {"alert_id": "V1", "created_at": "2026-10-11T01:40:00.000Z", "rule_id": "UC-VPN-001", "severity": "medium",
+         "entities": {"hosts": [{"hostname": "WS-1"}]}, "evidence": {"mfa": "TOTP aprobado"}}
+    assert sev([a])["severidad"] == "high"

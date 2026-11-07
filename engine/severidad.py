@@ -1,7 +1,8 @@
 """Matriz de severidad de politica_soc.md, apartado 2 (rol A).
 
 Severidad final = severidad de la regla x criticidad del activo o identidad MÁS crítica afectada,
-con un ajuste total de un nivel como mucho (+1 / -1).
+con un ajuste total de un nivel como mucho (+1 / -1). Única excepción, verificada por el código: el ataque
+web oportunista bloqueado por el WAF baja a informational (como el ticket_ejemplo.json oficial).
 
 Reglas de seguridad acordadas (protección frente a prompt injection):
   - El código calcula todo lo que puede sacar de datos estructurados: la severidad de la regla,
@@ -17,6 +18,7 @@ import csv
 import os
 
 from . import datos
+from .prefiltro import _waf_bloqueado
 
 LEVELS = ["informational", "low", "medium", "high", "critical"]
 CRITICIDADES = ["low", "medium", "high", "critical"]
@@ -125,6 +127,9 @@ def _acceso_confirmado(a):
     ev = a.get("evidence") if isinstance(a.get("evidence"), dict) else {}
     if str(ev.get("final_result", "")).lower() == "approved" or str(ev.get("mfa_result", "")).lower() == "approved":
         return True
+    mfa = str(ev.get("mfa", "")).lower()
+    if "aprobad" in mfa or "approved" in mfa:  # p. ej. la VPN de Logisoft: "TOTP aprobado"
+        return True
     for k in ("successes", "success_count"):
         if isinstance(ev.get(k), (int, float)) and ev[k] > 0:
             return True
@@ -208,6 +213,14 @@ def calcular_severidad(alertas, factores=None, inventario=None, contexto=None):
 
     ajuste = (1 if motivos_sube else 0) - (1 if motivos_baja else 0)
     final = LEVELS[max(0, min(len(LEVELS) - 1, LEVELS.index(base) + ajuste))]
+
+    # 3b. ataque web oportunista: bloqueado por el WAF y sin ninguna petición permitida de esa IP.
+    # El ticket_ejemplo.json oficial lo deja en informational aunque el activo sea crítico (el apartado 2 de la
+    # política daría low); es la única excepción al "un nivel como mucho", y solo se aplica si el código lo verifica.
+    if contexto is not None and alertas and all(_waf_bloqueado(a, contexto) for a in alertas) and final != "informational":
+        final = "informational"
+        avisos.append("ataque web bloqueado por el WAF sin ninguna petición permitida de esa IP (oportunista, sin efecto): "
+                      "informational, como en el ticket de ejemplo del reto")
 
     # 4. flujo autorizado: solo si el código lo verifica contra el calendario
     autorizado = False

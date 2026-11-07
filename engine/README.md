@@ -38,7 +38,7 @@ No se usan textos libres de la alerta como prueba (`change_ticket`, `maintenance
 
 ## Resultado sobre el dataset completo (07/11/2026)
 
-- Se cierran 4.271 de las 11.061 alertas: 3.386 ataques web bloqueados, 833 de SCCM, las 20 del pentest, las 19 de Nessus y unas pocas de otros cambios.
+- Se cierran 4.339 de las 11.061 alertas: 3.442 ataques web bloqueados, 845 de SCCM, 68 de consultas DNS codificadas de productos de seguridad (falso positivo; lista cerrada de 4 dominios, y solo si lo hacen 20 o más equipos y el dominio tiene más de un año), las 20 del pentest, las 19 de Nessus y unas pocas de otros cambios.
 - Otras 516 parecían cerrables, pero se retienen por entidad caliente. Son casi todas de SCCM en equipos que tienen alguna otra alerta.
 - No se cierra **ninguna** de las alertas de los 12 incidentes de `docs/incidentes_localizados.md`, y hay un test que lo comprueba.
 
@@ -58,10 +58,13 @@ Sigue el apartado 2 de `politica_soc.md` con estas reglas de seguridad:
 - **El LLM puede subir, nunca bajar.** La severidad de la regla y la criticidad salen de los datos (`activos.csv` y `usuarios.csv`). El LLM solo puede proponer valores más altos. El -1 por "bloqueado" solo se aplica si un campo estructurado lo dice (`action`, `edr_action`, `executed`...) y no hay actividad posterior en las entidades.
 - **"Flujo autorizado" solo si lo verifica el calendario.** Si solo lo dice el LLM, se ignora y queda un aviso. El agente debería usar `autorizado_verificado` para decidir si el veredicto es `benign_true_positive`.
 - **Lo que no está en el inventario cuenta como criticidad alta**, y la justificación lo dice.
+- El MFA aprobado en una VPN o un inicio de sesión (`mfa`, `mfa_result`, `final_result`) cuenta como acceso confirmado.
 - Las personas cuentan como criticidad media y las cuentas de servicio como alta. VIP, administradores y privilegiados suben un nivel.
 - Como mucho, un nivel arriba o abajo en total.
 
-Resultado sobre los 12 incidentes de `docs/incidentes_localizados.md`: 9 salen critical, 2 high y 1 medium (el #5, Logisoft, porque su regla es medium; el agente puede subirlo).
+Resultado sobre los 12 incidentes de `docs/incidentes_localizados.md`: 9 salen critical y 3 high (los #5, #10 y #11). La matriz sigue `politica_soc.md` al pie de la letra; el documento se corrigió donde estaba desfasado (#8, #9 y #12 son critical por el +1 de acceso o ejecución confirmados).
+
+Solo hay una excepción al "un nivel como mucho", y solo se aplica si el código la verifica: un **ataque web bloqueado por el WAF sin ninguna petición permitida de esa IP** es `informational` aunque el activo sea crítico. Es lo que hace el `01_contexto/ticket_ejemplo.json` oficial (regla low x activo crítico = medium, -1 por el bloqueo, y "ruta inexistente": informational). Para que se aplique hay que pasar `contexto=` a `calcular_severidad`.
 
 # Agrupación en incidentes (`agrupacion.py`)
 

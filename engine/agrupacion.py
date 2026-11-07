@@ -36,6 +36,10 @@ VENTANA_DEBIL = timedelta(hours=72)
 VENTANA_FAMILIA = timedelta(hours=72)
 VENTANA_RUIDO = timedelta(hours=6)
 MAX_ALERTAS_POR_ENTIDAD = 50
+# Un dominio/IP externa que se repite en muchas alertas es tráfico recurrente (DNSBL, antivirus, etc.):
+# solo une alertas cercanas, para no encadenar semanas de ruido en un único grupo.
+UMBRAL_RECURRENTE = 8
+VENTANA_RECURRENTE = timedelta(hours=24)
 VOLUMEN_RUIDO = 200  # una regla con al menos tantas alertas se trata como ruido de fondo
 
 _FUERTES = {"hash", "cloud", "dom", "fp"}
@@ -229,6 +233,8 @@ def agrupar(alertas, pivotes=None, volumen_reglas=None):
                 continue
             dt = t[b] - t[a]
             limite = VENTANA_FAMILIA if x.startswith("fam:") else (None if fuerte else VENTANA_DEBIL)
+            if fuerte and x.split(":", 1)[0] in ("dom", "fam", "ip") and len(indice[x]) > UMBRAL_RECURRENTE:
+                limite = VENTANA_RECURRENTE
             if limite is None or dt <= limite:
                 u.unir(a, b, _motivo(x, a, b, horas(a, b)))
 

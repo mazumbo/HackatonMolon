@@ -158,3 +158,27 @@ def test_autorizados_conocidos_se_cierran():
     for sufijo in ("011874", "011875", "011869", "011870", "011871", "011872", "011915", "011922"):
         assert r[sufijo]["decision"] == CERRAR, (sufijo, r[sufijo]["pistas"])
     assert r["011896"]["decision"] == PASAR  # parada del EDR en PRINT01 del 18/10: sin cambio
+
+
+def dns(aid, dom="e5.sk", host="WS-BCN-1421", clientes=130, edad=3000):
+    return {"alert_id": aid, "created_at": "2026-10-06T10:00:00.000Z", "rule_id": "UC-NET-006", "severity": "medium",
+            "entities": {"hosts": [{"hostname": host, "ip": "10.10.2.5"}], "domains": [dom]},
+            "evidence": {"parent_domain": dom, "distinct_clients": clientes, "domain_age_days": edad}}
+
+
+def test_dns_de_producto_de_seguridad_es_falso_positivo():
+    a = dns("D1")
+    r = prefiltrar(a, ctx([a]))
+    assert r["decision"] == CERRAR and r["veredicto"] == "false_positive" and r["severidad"] == "informational"
+
+
+def test_dns_de_dominio_desconocido_o_reciente_pasa_al_agente():
+    for a in (dns("D2", dom="cdn-wms-metrics.example", clientes=1, edad=15), dns("D3", clientes=1), dns("D4", edad=10)):
+        assert prefiltrar(a, ctx([a]))["decision"] == PASAR
+
+
+def test_dns_de_seguridad_no_se_cierra_si_el_equipo_tiene_otra_alerta_sin_explicar():
+    a = dns("D5")
+    otra = {"alert_id": "X1", "created_at": "2026-10-06T11:00:00.000Z", "rule_id": "UC-EDR-001", "severity": "high",
+            "entities": {"hosts": [{"hostname": "WS-BCN-1421", "ip": "10.10.2.5"}]}, "evidence": {}}
+    assert prefiltrar(a, ctx([a, otra]))["decision"] == PASAR
