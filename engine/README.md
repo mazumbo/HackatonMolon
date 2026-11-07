@@ -1,6 +1,6 @@
 # Motor determinista (rol A)
 
-Código sin LLM que va delante y detrás del agente: el **prefiltro de ruido** (`prefiltro.py`) y la **matriz de severidad** (`severidad.py`). La agrupación vendrá después.
+Código sin LLM que va delante y detrás del agente: el **prefiltro de ruido** (`prefiltro.py`) la **matriz de severidad** (`severidad.py`) y la **agrupación en incidentes** (`agrupacion.py`).
 
 ```bash
 pip install pytest                              # solo para los tests
@@ -62,3 +62,33 @@ Sigue el apartado 2 de `politica_soc.md` con estas reglas de seguridad:
 - Como mucho, un nivel arriba o abajo en total.
 
 Resultado sobre los 12 incidentes de `docs/incidentes_localizados.md`: 9 salen critical, 2 high y 1 medium (el #5, Logisoft, porque su regla es medium; el agente puede subirlo).
+
+# Agrupación en incidentes (`agrupacion.py`)
+
+```bash
+python -m engine.agrupacion                       # agrupa las alertas abiertas y se mide contra los 12 incidentes
+python -m engine.agrupacion --salida out/grupos.json
+```
+
+```python
+from collections import Counter
+from engine.agrupacion import Pivotes, agrupar
+abiertas = [a for a in todas if prefiltrar(a, ctx)["decision"] != "cerrar"]
+grupos = agrupar(abiertas, Pivotes.desde_dataset(alertas=abiertas), Counter(a["rule_id"] for a in todas))
+# cada grupo: grupo_id, alert_ids (en orden temporal), first_alert_at, last_alert_at, reglas,
+#             entidades_clave y uniones (por qué se ha unido cada alerta: "comparten el hash 70aa…")
+```
+
+Un grupo equivale a un ticket: el agente lo recibe entero y escribe un solo ticket con todos los `alert_ids`.
+
+Cómo agrupa (ajustado midiendo contra `docs/incidentes_localizados.md`):
+
+1. **Pistas de los logs.** Además de las entidades de la alerta, usa las de sus `related_events` (la IP interna que asigna la VPN y adónde hace RDP, el runner de una build…). También aprende de los logs normales el equipo de cada IP y la identidad cloud que se usa siempre desde cada IP interna.
+2. **El ruido no hace de pegamento.** Las reglas con 200 alertas o más (reportes de phishing, antivirus, viaje imposible…) no unen grupos por usuario o equipo. Solo se cuelgan del grupo más cercano si están a menos de 6 h, o se unen por una pista fuerte.
+3. **Campañas de dominios parecidos** (`packaging-iberia-pagos` y `packaging-iberia-portal`), si están a menos de 72 h.
+
+Las pistas fuertes (hash, identidad o clave cloud, IP externa, dominio y huella headless) unen sin límite de tiempo. Las débiles (usuario, equipo, IP interna) solo unen si están a menos de 72 h. Lo que sale en más de 50 alertas abiertas no une nada.
+
+Resultado (07/11/2026): 6.790 alertas abiertas se quedan en 6.605 grupos. Contra los 12 incidentes, la **completitud media es del 92 %** y la **pureza del 96 %**. Diez incidentes salen enteros, entre ellos el ransomware de 9 días, que se une por el hash repetido entre FS01 y PRINT01. Límite conocido: en el incidente 3 la build de CI no se une con el uso posterior de la clave cloud, porque esa identidad sale en demasiadas alertas legítimas. Eso lo tiene que conectar el agente.
+
+Como comparación, agrupar sin más todo lo que comparte algo en 72 h da una completitud del 84 % y una pureza del 87 %.
