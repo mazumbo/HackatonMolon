@@ -2,7 +2,7 @@
 
 ```bash
 pip install -r agent/requirements.txt
-cp agent/.env.example agent/.env   # omple LLM_API_KEY (clau de l'equip); TRIAGE_MODEL=nemotron o ornith
+cp agent/.env.example agent/.env   # omple LLM_API_KEY (clau de l'equip); TRIAGE_MODEL=ornith (nemotron no esta disponible)
 # API mock del reto (altre terminal): uvicorn mock_soc_api:app --port 8000   (a 06_herramientas/)
 python -m agent.smoke_test                       # una alerta de punta a punta
 python -m agent.run_batch --limit 10             # escriu out/tickets/*.json
