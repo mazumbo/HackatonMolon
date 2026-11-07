@@ -15,6 +15,12 @@ no se rompe: simplemente no enseña ese bloque.
 | `tool_trace` | `[{tool, args, result}]` | Traza de herramientas plegable |
 | `incident_ref` | int \| null | Número del incidente en `docs/incidentes_localizados.md` (solo para la evaluación) |
 | `status` | `open` \| `pending_approval` \| `closed` | Orden de la cola y filtro "Cerrados" |
+| `group` | `{grupo_id, uniones, entidades_clave, reglas}` | Bloque "Por qué estas alertas van juntas": entidades en común, reglas con su recuento y las primeras 8 uniones (`uniones` es una lista de textos; `reglas` un dict `rule_id -> nº`) |
+| `prefilter` | dict | Resultado de `prefiltrar()` (`decision`, `veredicto`, `severidad`, `motivo`, `cambio`, `pistas`). En un ticket cerrado por el pre-filtro es **un solo** dict (con `decision`); en un ticket de grupo es un dict `alert_id -> resultado` y la UI enseña, plegadas, solo las alertas con motivo o pistas |
+| `model` | string | Si vale `"prefiltro"`, el ticket se marca con la etiqueta "pre-filtro" en la cola (lo cerró el motor sin pasar por el modelo; suele venir con `triage_seconds = 0`) |
+| `related_alert_ids_suggested` | `[alert_id]` | Bloque "Alertas que podrían estar relacionadas": sugerencias del agente que no están en `alert_ids`, para que las mire una persona |
+
+Un ticket puede llevar varios `alert_ids` (un incidente agrupado); la línea temporal y el turno de noche usan todas.
 
 Nota para B: `alerts` sale casi gratis (son campos de cada alerta de `GET /alerts/{id}`) y es lo que
 más luce en la demo, porque alimenta la línea temporal y el turno de noche. Si solo podéis añadir un
