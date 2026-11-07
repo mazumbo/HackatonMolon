@@ -151,19 +151,25 @@ def _strip_think(text):
     return _THINK.sub("", text or "").strip()
 
 
-def _complete(client, msgs, tools, usage):
+FORCE_SUBMIT = {"type": "function", "function": {"name": "submit_ticket"}}
+
+
+def _complete(client, msgs, tools, usage, tool_choice="auto"):
     kw = dict(model=config.MODEL, max_tokens=config.MAX_OUTPUT_TOKENS, temperature=0,
-              tools=tools, tool_choice="auto", messages=msgs)
+              tools=tools, tool_choice=tool_choice, messages=msgs)
     if _no_think["on"]:
         kw["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
     t = time.time()
     try:
         resp = client.chat.completions.create(**kw)
     except BadRequestError:
-        if not _no_think["on"]:
+        if kw["tool_choice"] != "auto":  # passarela sense tool_choice amb nom: ho demanem en text
+            kw["tool_choice"] = "auto"
+        elif _no_think["on"]:
+            _no_think["on"] = False  # la passarela no accepta el parametre: seguim sense
+            kw.pop("extra_body", None)
+        else:
             raise
-        _no_think["on"] = False  # la passarela no accepta el parametre: seguim sense
-        kw.pop("extra_body", None)
         resp = client.chat.completions.create(**kw)
     usage["llm_seconds"].append(round(time.time() - t, 1))
     if resp.usage:
@@ -174,7 +180,14 @@ def _complete(client, msgs, tools, usage):
 
 
 def _make_runner(trace, inj_hits):
+    seen = {}
+
     def run(name, args):
+        key = name + json.dumps(args, sort_keys=True, ensure_ascii=False)
+        if key in seen:  # el model repeteix una consulta: no la tornem a fer ni a enviar sencera
+            return (f'<untrusted_data tool="{name}">{{"repetida": true, "nota": "Ja tens aquest resultat mes amunt; '
+                    f'no el tornis a demanar."}}</untrusted_data>')
+        seen[key] = True
         r = call_tool(name, args)
         txt = json.dumps(r, ensure_ascii=False)
         inj_hits.extend((name, e) for e in scan_injection(txt))  # sobre les dades en brut, abans de resumir
@@ -209,8 +222,13 @@ def triar(alert_id):
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": first}]
         nudged = False
         with ThreadPoolExecutor(max_workers=8) as pool:
-            for _ in range(config.MAX_STEPS):
-                m = _complete(client, msgs, tools, usage)
+            for step in range(1, config.MAX_STEPS + 1):
+                last = step == config.MAX_STEPS
+                if step == config.NUDGE_AFTER + 1 or last:
+                    msgs.append({"role": "user", "content": (
+                        "ULTIM PAS: crida ARA submit_ticket amb el que tinguis; posa el que falti a open_questions."
+                        if last else "Ja tens prou context: si no et falta res essencial, crida submit_ticket ara.")})
+                m = _complete(client, msgs, tools, usage, FORCE_SUBMIT if last else "auto")
                 calls = list(m.tool_calls or [])
                 content = _strip_think(m.content)
                 msgs.append({"role": "assistant", "content": content,

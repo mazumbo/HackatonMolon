@@ -18,3 +18,5 @@ MAX_OUTPUT_TOKENS = int(os.environ.get("MAX_OUTPUT_TOKENS", "1500"))
 # Demana al model que no "pensi en veu alta" (chat_template_kwargs.enable_thinking=false). Si la passarela ho rebutja, es desactiva sol.
 LLM_NO_THINK = os.environ.get("LLM_NO_THINK", "1") not in ("0", "false", "no")
 PREFETCH = os.environ.get("PREFETCH", "1") not in ("0", "false", "no")
+# A partir d'aquest pas es recorda al model que ha d'entregar; a l'ultim pas se l'obliga a cridar submit_ticket.
+NUDGE_AFTER = int(os.environ.get("NUDGE_AFTER", "6"))
