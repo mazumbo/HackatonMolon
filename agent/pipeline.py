@@ -90,7 +90,8 @@ def ticket_prefiltro(alert, r):
     motivo = r.get("motivo") or "cerrada por el prefiltro"
     return {
         "ticket_id": "TKT-" + aid, "alert_ids": [aid],
-        "title": ("Actividad autorizada: " if veredicto == "benign_true_positive" else "Ataque bloqueado sin efecto: ")
+        "title": {"benign_true_positive": "Actividad autorizada: ", "false_positive": "Falso positivo: "}.get(
+                     veredicto, "Ataque bloqueado sin efecto: ")
                  + (alert.get("rule_name") or alert.get("rule_id") or "alerta"),
         "verdict": veredicto, "confidence": 0.9, "severity": sev,
         "severity_rationale": f"Prefiltro del motor: {motivo}",
