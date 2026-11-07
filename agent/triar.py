@@ -148,6 +148,10 @@ def build_ticket(sub, trace, seconds, usage, inj_hits, group_ids=None, grupo=Non
         verdict = "needs_more_info"
         open_q.append("El modelo ve actividad legítima, pero el calendario de cambios no la verifica: "
                       "confirmar con el responsable antes de cerrar.")
+    if verdict == "false_positive" and sev not in ("informational", "low"):
+        # La regla s'equivoca i no hi ha atac: no pot passar per davant d'alertes reals a la cua.
+        why += f" Falso positivo (sin ataque): severidad informational en lugar de {sev}."
+        sev = "informational"
     fl = sub.get("escalation_flags") or {}
     reasons = []
     if verdict == "true_positive" and sev in ("high", "critical"):
@@ -322,9 +326,9 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
     alerts_by_id = dict(alerts or {})
     try:
         if not config.MODEL:
-            raise RuntimeError("falta TRIAGE_MODEL (id del model)")
+            raise RuntimeError("falta TRIAGE_MODEL (id del modelo)")
         if not config.LLM_API_KEY:
-            raise RuntimeError("falta LLM_API_KEY (clau del LLM de l'equip)")
+            raise RuntimeError("falta LLM_API_KEY (clave del LLM del equipo)")
         client = OpenAI(base_url=config.LLM_BASE_URL, api_key=config.LLM_API_KEY, timeout=config.LLM_TIMEOUT)
         tools = [_as_openai_tool(t) for t in TOOLS + [SUBMIT]]
         run = _make_runner(trace, inj_hits)
@@ -336,7 +340,7 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
         else:
             first = f"Tría la alerta {alert_ids[0]}. Empieza con get_alert."
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": first}]
-        nudged = False
+        force_next = False
         with ThreadPoolExecutor(max_workers=8) as pool:
             for step in range(1, config.MAX_STEPS + 1):
                 last = step >= min(config.FORCE_SUBMIT_AT, config.MAX_STEPS)
@@ -344,7 +348,7 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
                     msgs.append({"role": "user", "content": (
                         "ÚLTIMO PASO: llama YA a submit_ticket con lo que tengas; pon lo que falte en open_questions."
                         if last else "Ya tienes contexto suficiente: si no te falta nada esencial, llama a submit_ticket ahora.")})
-                m = _complete(client, msgs, tools, usage, FORCE_SUBMIT if last else "auto")
+                m = _complete(client, msgs, tools, usage, FORCE_SUBMIT if last or force_next else "auto")
                 calls = list(m.tool_calls or [])
                 content = _strip_think(m.content)
                 msgs.append({"role": "assistant", "content": content,
@@ -360,9 +364,9 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
                     return build_ticket(sub, trace, time.time() - t0, usage, inj_hits, alert_ids, grupo, alerts_by_id,
                                         contexto, prefilter)
                 if not calls:
-                    if nudged:
-                        raise RuntimeError("el model no ha cridat submit_ticket")
-                    nudged = True
+                    if force_next:
+                        raise RuntimeError("el modelo no ha llamado a submit_ticket ni forzándolo")
+                    force_next = True  # el proper pas obliga submit_ticket (tool_choice), com l'ultim pas
                     msgs.append({"role": "user", "content": "Acaba llamando a submit_ticket con tu conclusión."})
                     continue
 
@@ -378,7 +382,7 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
                 usage["tools_seconds"] = round(usage["tools_seconds"] + time.time() - tt, 1)
                 for (c, _), content in zip(parsed, outs):
                     msgs.append({"role": "tool", "tool_call_id": c.id, "content": content})
-        raise RuntimeError(f"maxim de {config.MAX_STEPS} passos sense conclusio")
+        raise RuntimeError(f"máximo de {config.MAX_STEPS} pasos sin conclusión")
     except Exception as e:  # triar no ha de llancar mai
         t = fallback_ticket(alert_ids[0] if alert_ids else "SIN-ALERTA", f"{type(e).__name__}: {e}", trace,
                             time.time() - t0, usage)
