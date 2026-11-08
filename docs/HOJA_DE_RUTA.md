@@ -1,6 +1,6 @@
 # Hoja de ruta · Hackathon SOC Tarvia
 
-7 de noviembre de 2026 · @mazumbo · [versión viva](https://claude.ai/artifact/C6zkYskYrxzyrEfERRayuN)
+7 de noviembre de 2026 · @mazumbo
 
 ## Objetivo y principios
 
