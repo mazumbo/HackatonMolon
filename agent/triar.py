@@ -415,7 +415,8 @@ def triar_grupo(alert_ids, grupo=None, alerts=None, contexto=None, prefilter=Non
             raise RuntimeError("falta TRIAGE_MODEL (id del modelo)")
         if not config.LLM_API_KEY:
             raise RuntimeError("falta LLM_API_KEY (clave del LLM del equipo)")
-        client = OpenAI(base_url=config.LLM_BASE_URL, api_key=config.LLM_API_KEY, timeout=config.LLM_TIMEOUT)
+        client = OpenAI(base_url=config.LLM_BASE_URL, api_key=config.LLM_API_KEY, timeout=config.LLM_TIMEOUT,
+                        max_retries=config.LLM_MAX_RETRIES)
         tools = [_as_openai_tool(t) for t in TOOLS + [SUBMIT]]
         run = _make_runner(trace, inj_hits)
         if config.PREFETCH:
