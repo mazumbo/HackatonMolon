@@ -1,0 +1,295 @@
+{
+  "ticket_id": "TKT-ALR-20261013-011901",
+  "alert_ids": [
+    "ALR-20261013-011901"
+  ],
+  "title": "Dependency confusion: package npm malicioso en build ecom-frontend",
+  "verdict": "true_positive",
+  "confidence": 0.95,
+  "severity": "high",
+  "severity_rationale": "Regla medium (UC-DEV-001) x criticidad alta (equipo CI-RUNNER01) = medium. +1: el LLM confirma ejecución o acceso. final high. Hechos: criticidad: CI-RUNNER01 (A01175) es runner CI/CD de criticidad Alta en AWS-PROD y contiene la clave de despliegue svc_ecom_deploy (evt CI-0000603); acceso/ejecución: El postinstall del paquete malicioso ejecutó node scripts/telemetry.js y leyó los secretos AWS en el runner (evt CI-0000603); el build se desplegó (evt CI-00006.",
+  "severity_factors": {
+    "rule_severity": "medium",
+    "asset_criticality": "high",
+    "confirmed_execution_or_access": true,
+    "privileged_or_vip": false,
+    "personal_or_payment_data": false,
+    "blocked_before_effect": false,
+    "factor_evidence": {
+      "asset_criticality": "CI-RUNNER01 (A01175) es runner CI/CD de criticidad Alta en AWS-PROD y contiene la clave de despliegue svc_ecom_deploy (evt CI-0000603).",
+      "confirmed_execution_or_access": "El postinstall del paquete malicioso ejecutó node scripts/telemetry.js y leyó los secretos AWS en el runner (evt CI-0000603); el build se desplegó (evt CI-0000603).",
+      "blocked_before_effect": "No hay bloqueo previo: el paquete se instaló y ejecutó y el build dio OK; no se detectó contención del POST saliente."
+    }
+  },
+  "affected": {},
+  "summary": "El build ecom-frontend#1842 (dependabot, commit 7f1c2ab) instaló el paquete tarvia-checkout-utils@9.9.1 desde el registro público npmjs en lugar del interno @tarvia/checkout-utils: es dependency confusion. El script postinstall (node scripts/telemetry.js) leyó variables de entorno con secretos AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY y NPM_TOKEN, y envió un JSON de 2,1 KB por HTTPS POST a npm-telemetry-stats.example (203.0.113.170, NL, hosting ajeno). El sandbox confirma el paquete como malicioso (score 90, familia \"Paquete npm malicioso (dependency confusion)\", MITRE T1195.002 + T1552.001). El build marcó \"desplegado\" y la clave de despliegue svc_ecom_deploy reside en el propio runner, por lo que el secreto pudo verse comprometido.",
+  "evidence": [
+    {
+      "source": "get_alert",
+      "event_id": "ALR-20261013-011901",
+      "finding": "Build ecom-frontend#1842 instaló tarvia-checkout-utils@9.9.1 (registro público) en vez de @tarvia/checkout-utils (interno); env_vars_read AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, NPM_TOKEN; POST a npm-telemetry-stats.example."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000602",
+      "finding": "npm ci del build #1842: new_packages tarvia-checkout-utils 9.9.1 desde registry.npmjs.org (público), esperado @tarvia/checkout-utils 2.3.0 (interno), sha256 f412c70..., postinstall node scripts/telemetry.js."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000603",
+      "finding": "postinstall:stdout 'telemetry ok', env_read [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, NPM_TOKEN, SENTRY_DSN], network POST https://npm-telemetry-stats.example/collect (2,1 KB)."
+    },
+    {
+      "source": "get_sandbox",
+      "event_id": "sandbox f412c70...",
+      "finding": "Verdict malicious (score 90, familia dependency confusion): postinstall lee vars AWS_*/NPM_TOKEN y envía JSON por HTTPS POST; MITRE T1195.002 + T1552.001; red npm-telemetry-stats.example / 203.0.113.170."
+    },
+    {
+      "source": "get_intel",
+      "event_id": "intel 203.0.113.170",
+      "finding": "203.0.113.170: NL, ASN AS64615, hosting ajeno (no es infra Tarvia); npm-telemetry-stats.example sin intel ni geo."
+    }
+  ],
+  "enrichment": [
+    {
+      "indicator": "f412c70fef24e226c48b62c885087042fb88ddae0df4f4d5386f4b48156a676c",
+      "type": "sha256",
+      "source": "get_sandbox",
+      "result": "malicious, score 90, dependency confusion, T1195.002/T1552.001"
+    },
+    {
+      "indicator": "npm-telemetry-stats.example",
+      "type": "domain",
+      "source": "get_intel",
+      "result": "sin intel (null); no es dominio Tarvia"
+    },
+    {
+      "indicator": "203.0.113.170",
+      "type": "ip",
+      "source": "get_intel",
+      "result": "NL, AS64615, hosting ajeno; no en CMDB"
+    }
+  ],
+  "mitre": [
+    "T1195.002",
+    "T1552.001"
+  ],
+  "recommended_actions": [],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "true_positive de severidad high; ejecucion/robo de credenciales/persistencia"
+  },
+  "open_questions": [],
+  "triage_seconds": 41.2,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261013-011901",
+      "created_at": "2026-10-13T12:26:03.000Z",
+      "rule_id": "UC-DEV-001",
+      "rule_name": "Dependencia con script de instalación que accede a secretos o a red",
+      "severity": "medium",
+      "source_product": "CICD"
+    }
+  ],
+  "first_alert_at": "2026-10-13T12:26:03.000Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [
+    {
+      "tool": "get_sandbox",
+      "args": {
+        "sha256": "f412c70fef24e226c48b62c885087042fb88ddae0df4f4d5386f4b48156a676c"
+      },
+      "result": "{\"status\": 200, \"body\": {\"sha256\": \"f412c70fef24e226c48b62c885087042fb88ddae0df4f4d5386f4b48156a676c\", \"md5\": \"f8f549b3dc7eebd0a7713c7019e831e6\", \"file_name\": \"tarvia-checkout-utils-9.9.1.tgz\", \"verdict\": \"malicious\", \"score\": 90, \"malware_family\": \"Paquete npm malicioso (dependency confusion)\", \"behaviors\": [\"postinstall: node scripts/telemetry.js\", \"Lee variables de entorno con nombres AWS_*, NPM_TOKEN\", \"Envía un JSON por HTTPS POST\"], \"network\": {\"domains\": [\"npm-telemetry-stats.example\"], \"ips\": [\"203.0.113.170\"]}, \"mitre\": [\"T1195.002\", \"T1552.001\"], \"dropped_files\": [], \"analysis_env\": "
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "npm-telemetry-stats.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"npm-telemetry-stats.example\", \"tip\": null, \"geo\": null}}"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261013-011901"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261013-011901\", \"created_at\": \"2026-10-13T12:26:03.000Z\", \"source_product\": \"CICD\", \"rule_id\": \"UC-DEV-001\", \"rule_name\": \"Dependencia con script de instalación que accede a secretos o a red\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Initial Access\", \"technique_id\": \"T1195.002\", \"technique\": \"Compromise Software Supply Chain\"}, \"description\": \"Durante un build, un script postinstall lee variables de entorno sensibles o conecta a un dominio nuevo.\", \"entities\": {\"hosts\": [{\"hostname\": \"CI-RUNNER01\", \"ip\": \"172.16.10.21\"}], \"domains\""
+    },
+    {
+      "tool": "search_changes",
+      "args": {
+        "q": ""
+      },
+      "result": "{\"status\": 200, \"body\": [{\"id\": \"CHG-2026-1042\", \"titulo\": \"Pentest externo de la tienda online\", \"inicio\": \"2026-10-08 08:00\", \"fin\": \"2026-10-10 18:00\", \"solicitante\": \"Auditora externa\", \"detalle\": \"IPs origen 192.0.2.10-12; alcance www.tarvia.example y api; sin DoS\", \"alcance\": \"WEB-ECOM01..04\"}, {\"id\": \"CHG-2026-1049\", \"titulo\": \"Escaneo semanal de vulnerabilidades\", \"inicio\": \"2026-10-07 01:00\", \"fin\": \"2026-10-07 05:00\", \"solicitante\": \"Ciberseguridad\", \"detalle\": \"Origen NESSUS01 (svc_scanner); se repite cada miércoles\", \"alcance\": \"Todas las redes salvo OT\"}, {\"id\": \"CHG-2026-1050\", \""
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "CI-RUNNER01"
+      },
+      "result": "{\"status\": 200, \"body\": {\"asset_id\": \"A01175\", \"hostname\": \"CI-RUNNER01\", \"ip\": \"172.16.10.21\", \"type\": \"Runner CI/CD\", \"os\": \"Amazon Linux 2023\", \"criticality\": \"Alta\", \"zone\": \"AWS-PROD\", \"location\": \"AWS eu-west-1\", \"business_service\": \"Integración continua\", \"owner_upn\": \"\", \"internet_facing\": \"False\", \"edr_installed\": \"True\", \"description\": \"Ejecuta los builds de la tienda online. Tiene en variables de entorno la clave de despliegue de AWS (svc_ecom_deploy).\", \"vulnerabilities\": []}}"
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "f412c70fef24e226c48b62c885087042fb88ddae0df4f4d5386f4b48156a676c"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"f412c70fef24e226c48b62c885087042fb88ddae0df4f4d5386f4b48156a676c\", \"tip\": null, \"geo\": null}}"
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "203.0.113.170"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"203.0.113.170\", \"tip\": null, \"geo\": {\"ip\": \"203.0.113.170\", \"country\": \"NL\", \"city\": \"\", \"asn\": \"AS64615\", \"as_org\": \"Hosting (simulado)\", \"is_tor\": \"False\", \"is_vpn_provider\": \"False\", \"is_hosting\": \"True\", \"is_residential_proxy\": \"False\"}}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "firewall",
+        "q": "FW-0026595 203.0.113.170 npm-telemetry-stats.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['FW-0026595', '203.0.113.170', 'npm-telemetry-stats.example']: se buscó 'npm-telemetry-stats.example' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "203.0.113.170"
+      },
+      "result": "{\"status\": 404, \"body\": {\"detail\": \"no está en la CMDB (¿equipo externo o no gestionado?)\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cicd_builds",
+        "q": "CI-0000601 CI-0000602 CI-0000603 ecom-frontend#1842"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['CI-0000601', 'CI-0000602', 'CI-0000603', 'ecom-frontend#1842']: se buscó 'CI-0000601' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cloudtrail",
+        "q": "AWS_ACCESS_KEY_ID svc_ecom_deploy ecom-frontend"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['AWS_ACCESS_KEY_ID', 'svc_ecom_deploy', 'ecom-frontend']: se buscó 'AWS_ACCESS_KEY_ID' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cicd_builds",
+        "q": "tarvia-checkout-utils"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 2, \"truncated\": false, \"items\": [{\"event_id\": \"CI-0000602\", \"timestamp\": \"2026-10-13T12:22:00.000Z\", \"pipeline\": \"ecom-frontend\", \"build_id\": \"ecom-frontend#1842\", \"runner\": \"CI-RUNNER01\", \"step\": \"npm ci\", \"status\": \"ok\", \"details\": {\"installed\": 1384, \"new_packages\": [{\"name\": \"tarvia-checkout-utils\", \"version\": \"9.9.1\", \"registry\": \"registry.npmjs.org (público)\", \"expected\": \"@tarvia/checkout-utils 2.3.0 (registro interno)\", \"sha256\": \"f412c70fef24e226c48b62c885087042fb88ddae0df4f4d5386f4b48156a676c\", \"postinstall\": \"node scripts/telemetry.js\"}]}}, {\"event_"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cicd_builds",
+        "q": "ecom-frontend"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 155, \"truncated\": false, \"items\": [{\"event_id\": \"CI-0000005\", \"timestamp\": \"2026-10-05T11:29:13.565Z\", \"pipeline\": \"ecom-frontend\", \"build_id\": \"ecom-frontend#1720\", \"runner\": \"CI-RUNNER01\", \"step\": \"npm ci\", \"status\": \"ok\", \"details\": {\"installed\": 808, \"new_packages\": []}}, {\"event_id\": \"CI-0000025\", \"timestamp\": \"2026-10-05T11:30:25.047Z\", \"pipeline\": \"ecom-frontend\", \"build_id\": \"ecom-frontend#1261\", \"runner\": \"CI-RUNNER01\", \"step\": \"npm ci\", \"status\": \"ok\", \"details\": {\"installed\": 917, \"new_packages\": []}}, {\"event_id\": \"CI-0000006\", \"timestamp\": \"2026-1"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "email_clicks",
+        "q": "npm-telemetry-stats.example 203.0.113.170"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['npm-telemetry-stats.example', '203.0.113.170']: se buscó 'npm-telemetry-stats.example' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "firewall",
+        "q": "CI-RUNNER01 172.16.10.21"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['CI-RUNNER01', '172.16.10.21']: se buscó 'CI-RUNNER01' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cicd_builds",
+        "q": "CI-0000601"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"CI-0000601\", \"timestamp\": \"2026-10-13T12:21:00.000Z\", \"pipeline\": \"ecom-frontend\", \"build_id\": \"ecom-frontend#1842\", \"runner\": \"CI-RUNNER01\", \"step\": \"checkout\", \"status\": \"ok\", \"details\": {\"commit\": \"7f1c2ab\", \"author\": \"dependabot\", \"message\": \"chore(deps): bump checkout utils\"}}]}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "firewall",
+        "q": "npm-telemetry-stats.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": []}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cicd_builds",
+        "q": "deploy AWS_SECRET_ACCESS_KEY"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['deploy', 'AWS_SECRET_ACCESS_KEY']: se buscó 'AWS_SECRET_ACCESS_KEY' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cloudtrail",
+        "q": "svc_ecom_deploy"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 200, \"truncated\": true, \"items\": [{\"event_id\": \"CT-0000127\", \"timestamp\": \"2026-10-04T22:33:10.000Z\", \"eventName\": \"PutObject\", \"eventSource\": \"s3.amazonaws.com\", \"awsRegion\": \"eu-west-1\", \"sourceIPAddress\": \"172.16.10.21\", \"userAgent\": \"aws-cli/2.17.0 Python/3.11 Linux\", \"userIdentity\": {\"type\": \"IAMUser\", \"userName\": \"svc_ecom_deploy\", \"accessKeyId\": \"AKIATARVIA7XQ2DEPLY\"}, \"requestParameters\": {\"bucketName\": \"tarvia-media-public\"}, \"errorCode\": \"\"}, {\"event_id\": \"CT-0000076\", \"timestamp\": \"2026-10-04T22:54:14.000Z\", \"eventName\": \"PutObject\", \"eventSource\": "
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "cicd_builds",
+        "q": "deploy ecom-frontend AWS",
+        "desde": "2026-10-13T12:00:00Z",
+        "hasta": "2026-10-13T14:00:00Z"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['deploy', 'ecom-frontend', 'AWS']: se buscó 'deploy' y se filtró por el resto\"}}"
+    }
+  ],
+  "status": "open",
+  "usage": {
+    "input_tokens": 45039,
+    "output_tokens": 2252,
+    "steps": 5,
+    "llm_seconds": [
+      2.8,
+      2.6,
+      2.6,
+      2.8,
+      14.4
+    ],
+    "tools_seconds": 14.1,
+    "prefetch_seconds": 2.0,
+    "llm_seconds_total": 25.2
+  },
+  "model": "ornith",
+  "group": {
+    "grupo_id": "GRP-ALR-20261013-011901",
+    "uniones": [],
+    "entidades_clave": [],
+    "reglas": {
+      "UC-DEV-001": 1
+    }
+  },
+  "prefilter": {
+    "ALR-20261013-011901": {
+      "alert_id": "ALR-20261013-011901",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1057 (Despliegue agente de monitorización 3.4 en servidores), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    }
+  }
+}

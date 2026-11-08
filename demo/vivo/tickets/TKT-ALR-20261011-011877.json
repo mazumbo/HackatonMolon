@@ -1,0 +1,715 @@
+{
+  "ticket_id": "TKT-ALR-20261011-011877",
+  "alert_ids": [
+    "ALR-20261009-002236",
+    "ALR-20261011-011877",
+    "ALR-20261011-011883",
+    "ALR-20261012-011884",
+    "ALR-20261013-003637",
+    "ALR-20261014-011878",
+    "ALR-20261014-011885",
+    "ALR-20261015-011886",
+    "ALR-20261018-011879",
+    "ALR-20261018-011887",
+    "ALR-20261019-011888",
+    "ALR-20261021-011880",
+    "ALR-20261021-011889",
+    "ALR-20261022-011890",
+    "ALR-20261022-007268",
+    "ALR-20261025-011881",
+    "ALR-20261025-011891",
+    "ALR-20261026-011892",
+    "ALR-20261028-011882",
+    "ALR-20261028-011893",
+    "ALR-20261029-011894"
+  ],
+  "title": "Túnel DNS y VPN de proveedor desde WMS01: ataque real",
+  "verdict": "true_positive",
+  "confidence": 0.8,
+  "severity": "high",
+  "severity_rationale": "Regla medium (UC-NET-006, UC-VPN-001) x criticidad alta (equipo WMS01) = medium. +1: acceso o ejecución confirmados en los datos; el LLM confirma ejecución o acceso. final high. Hechos: criticidad: WMS01 (10.40.2.10) es servidor de aplicaciones WMS, criticidad alta, zona LOGISTICS-IT (ALR-20261011-011883); acceso/ejecución: ext.logisoft@tarvia.example accede por VPN con éxito desde IPs externas en múltiples ocasiones fuera del horario autorizado (ALR-20261011-011877, ALR-20261018-0.",
+  "severity_factors": {
+    "rule_severity": "medium",
+    "asset_criticality": "high",
+    "confirmed_execution_or_access": true,
+    "privileged_or_vip": false,
+    "personal_or_payment_data": false,
+    "blocked_before_effect": false,
+    "authorized_flow": false,
+    "factor_evidence": {
+      "rule_severity": "UC-NET-006 (túnel DNS) con severidad medium: 246–310 consultas/hora a subdominios >40 chars de cdn-wms-metrics.example, qtype TXT (ALR-20261011-011883, ALR-20261014-011885)",
+      "asset_criticality": "WMS01 (10.40.2.10) es servidor de aplicaciones WMS, criticidad alta, zona LOGISTICS-IT (ALR-20261011-011883)",
+      "confirmed_execution_or_access": "ext.logisoft@tarvia.example accede por VPN con éxito desde IPs externas en múltiples ocasiones fuera del horario autorizado (ALR-20261011-011877, ALR-20261018-011879, ALR-20261021-011880)",
+      "authorized_flow": "Ninguna alerta está cubierta por cambio aprobado; CHG-2026-1071 (despliegue Logisoft en WMS01) cae fuera de la ventana/origen y no autoriza los accesos nocturnos repetidos"
+    }
+  },
+  "affected": {},
+  "summary": "El host WMS01 (servidor WMS, criticidad alta) realiza de forma persistente (oct 11–29) más de 200 consultas/hora a subdominios largos de cdn-wms-metrics.example (dominio registrado hace ~15 días, sin reputación conocida), patrón de túnel DNS que no corresponde a ningún cambio aprobado. Paralelamente, el usuario de proveedor ext.logisoft@tarvia.example accede por VPN desde IPs externas (77.90.185.20 / 198.18.240.10) en ventanas nocturnas y fines de semana fuera del horario 8–18 h autorizado, sin cubrirse por CHG-2026-1071. La correlación de ambas series sobre las mismas entidades (WMS01, 10.40.2.10, ext.logisoft) sugiere una operación de exfiltración coordinada, no un falso positivo del detector de túnel.",
+  "evidence": [],
+  "enrichment": [],
+  "mitre": [],
+  "recommended_actions": [],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "true_positive de severidad high; ejecucion/robo de credenciales/persistencia; cadena de ataque"
+  },
+  "open_questions": [],
+  "triage_seconds": 22.7,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261009-002236",
+      "created_at": "2026-10-09T16:10:34.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261011-011877",
+      "created_at": "2026-10-11T01:40:22.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261011-011883",
+      "created_at": "2026-10-11T02:28:31.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261012-011884",
+      "created_at": "2026-10-12T02:50:03.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261013-003637",
+      "created_at": "2026-10-13T16:40:48.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261014-011878",
+      "created_at": "2026-10-13T23:38:14.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261014-011885",
+      "created_at": "2026-10-14T02:19:25.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261015-011886",
+      "created_at": "2026-10-15T02:43:48.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261018-011879",
+      "created_at": "2026-10-18T00:48:35.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261018-011887",
+      "created_at": "2026-10-18T02:39:44.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261019-011888",
+      "created_at": "2026-10-19T02:49:02.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261021-011880",
+      "created_at": "2026-10-21T01:48:20.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261021-011889",
+      "created_at": "2026-10-21T02:15:26.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261022-011890",
+      "created_at": "2026-10-22T02:33:42.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261022-007268",
+      "created_at": "2026-10-22T16:33:25.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261025-011881",
+      "created_at": "2026-10-24T23:16:07.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261025-011891",
+      "created_at": "2026-10-25T03:05:18.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261026-011892",
+      "created_at": "2026-10-26T03:44:02.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261028-011882",
+      "created_at": "2026-10-28T02:08:57.000Z",
+      "rule_id": "UC-VPN-001",
+      "rule_name": "Acceso VPN de proveedor fuera de horario o desde origen nuevo",
+      "severity": "low",
+      "source_product": "VPN"
+    },
+    {
+      "alert_id": "ALR-20261028-011893",
+      "created_at": "2026-10-28T03:46:54.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    },
+    {
+      "alert_id": "ALR-20261029-011894",
+      "created_at": "2026-10-29T03:22:44.000Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    }
+  ],
+  "first_alert_at": "2026-10-09T16:10:34.000Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261012-011884"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261012-011884\", \"created_at\": \"2026-10-12T02:50:03.000Z\", \"source_product\": \"DNS\", \"rule_id\": \"UC-NET-006\", \"rule_name\": \"Posible túnel DNS\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Exfiltration\", \"technique_id\": \"T1048.003\", \"technique\": \"Exfiltration Over Unencrypted Non-C2 Protocol (DNS)\"}, \"description\": \"Más de 200 consultas en 1 h a subdominios largos (>40 caracteres) de un mismo dominio.\", \"entities\": {\"hosts\": [{\"hostname\": \"WMS01\", \"ip\": \"10.40.2.10\"}], \"domains\": [\"cdn-wms-metrics.example\"]}, \"evidence\": {\"queries_1h\": 2"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261018-011887"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261018-011887\", \"created_at\": \"2026-10-18T02:39:44.000Z\", \"source_product\": \"DNS\", \"rule_id\": \"UC-NET-006\", \"rule_name\": \"Posible túnel DNS\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Exfiltration\", \"technique_id\": \"T1048.003\", \"technique\": \"Exfiltration Over Unencrypted Non-C2 Protocol (DNS)\"}, \"description\": \"Más de 200 consultas en 1 h a subdominios largos (>40 caracteres) de un mismo dominio.\", \"entities\": {\"hosts\": [{\"hostname\": \"WMS01\", \"ip\": \"10.40.2.10\"}], \"domains\": [\"cdn-wms-metrics.example\"]}, \"evidence\": {\"queries_1h\": 2"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261014-011885"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261014-011885\", \"created_at\": \"2026-10-14T02:19:25.000Z\", \"source_product\": \"DNS\", \"rule_id\": \"UC-NET-006\", \"rule_name\": \"Posible túnel DNS\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Exfiltration\", \"technique_id\": \"T1048.003\", \"technique\": \"Exfiltration Over Unencrypted Non-C2 Protocol (DNS)\"}, \"description\": \"Más de 200 consultas en 1 h a subdominios largos (>40 caracteres) de un mismo dominio.\", \"entities\": {\"hosts\": [{\"hostname\": \"WMS01\", \"ip\": \"10.40.2.10\"}], \"domains\": [\"cdn-wms-metrics.example\"]}, \"evidence\": {\"queries_1h\": 3"
+    },
+    {
+      "tool": "search_changes",
+      "args": {
+        "q": ""
+      },
+      "result": "{\"status\": 200, \"body\": [{\"id\": \"CHG-2026-1042\", \"titulo\": \"Pentest externo de la tienda online\", \"inicio\": \"2026-10-08 08:00\", \"fin\": \"2026-10-10 18:00\", \"solicitante\": \"Auditora externa\", \"detalle\": \"IPs origen 192.0.2.10-12; alcance www.tarvia.example y api; sin DoS\", \"alcance\": \"WEB-ECOM01..04\"}, {\"id\": \"CHG-2026-1049\", \"titulo\": \"Escaneo semanal de vulnerabilidades\", \"inicio\": \"2026-10-07 01:00\", \"fin\": \"2026-10-07 05:00\", \"solicitante\": \"Ciberseguridad\", \"detalle\": \"Origen NESSUS01 (svc_scanner); se repite cada miércoles\", \"alcance\": \"Todas las redes salvo OT\"}, {\"id\": \"CHG-2026-1050\", \""
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261011-011883"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261011-011883\", \"created_at\": \"2026-10-11T02:28:31.000Z\", \"source_product\": \"DNS\", \"rule_id\": \"UC-NET-006\", \"rule_name\": \"Posible túnel DNS\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Exfiltration\", \"technique_id\": \"T1048.003\", \"technique\": \"Exfiltration Over Unencrypted Non-C2 Protocol (DNS)\"}, \"description\": \"Más de 200 consultas en 1 h a subdominios largos (>40 caracteres) de un mismo dominio.\", \"entities\": {\"hosts\": [{\"hostname\": \"WMS01\", \"ip\": \"10.40.2.10\"}], \"domains\": [\"cdn-wms-metrics.example\"]}, \"evidence\": {\"queries_1h\": 2"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261015-011886"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261015-011886\", \"created_at\": \"2026-10-15T02:43:48.000Z\", \"source_product\": \"DNS\", \"rule_id\": \"UC-NET-006\", \"rule_name\": \"Posible túnel DNS\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Exfiltration\", \"technique_id\": \"T1048.003\", \"technique\": \"Exfiltration Over Unencrypted Non-C2 Protocol (DNS)\"}, \"description\": \"Más de 200 consultas en 1 h a subdominios largos (>40 caracteres) de un mismo dominio.\", \"entities\": {\"hosts\": [{\"hostname\": \"WMS01\", \"ip\": \"10.40.2.10\"}], \"domains\": [\"cdn-wms-metrics.example\"]}, \"evidence\": {\"queries_1h\": 2"
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "WMS01"
+      },
+      "result": "{\"status\": 200, \"body\": {\"asset_id\": \"A01177\", \"hostname\": \"WMS01\", \"ip\": \"10.40.2.10\", \"type\": \"Servidor de aplicaciones\", \"os\": \"Windows Server 2019\", \"criticality\": \"Alta\", \"zone\": \"LOGISTICS-IT\", \"location\": \"Martorell CL\", \"business_service\": \"Gestión de almacén (WMS)\", \"owner_upn\": \"\", \"internet_facing\": \"False\", \"edr_installed\": \"True\", \"description\": \"\", \"vulnerabilities\": []}}"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261019-011888"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261019-011888\", \"created_at\": \"2026-10-19T02:49:02.000Z\", \"source_product\": \"DNS\", \"rule_id\": \"UC-NET-006\", \"rule_name\": \"Posible túnel DNS\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Exfiltration\", \"technique_id\": \"T1048.003\", \"technique\": \"Exfiltration Over Unencrypted Non-C2 Protocol (DNS)\"}, \"description\": \"Más de 200 consultas en 1 h a subdominios largos (>40 caracteres) de un mismo dominio.\", \"entities\": {\"hosts\": [{\"hostname\": \"WMS01\", \"ip\": \"10.40.2.10\"}], \"domains\": [\"cdn-wms-metrics.example\"]}, \"evidence\": {\"queries_1h\": 2"
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "cdn-wms-metrics.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"cdn-wms-metrics.example\", \"tip\": null, \"geo\": null}}"
+    }
+  ],
+  "status": "open",
+  "usage": {
+    "input_tokens": 25414,
+    "output_tokens": 1746,
+    "steps": 2,
+    "llm_seconds": [
+      4.7,
+      13.9
+    ],
+    "tools_seconds": 0.0,
+    "prefetch_seconds": 4.1,
+    "llm_seconds_total": 18.6
+  },
+  "model": "ornith",
+  "group": {
+    "grupo_id": "GRP-ALR-20261009-002236",
+    "uniones": [
+      {
+        "de": "ALR-20261009-002236",
+        "a": "ALR-20261011-011877",
+        "entidad": "user:ext.logisoft@tarvia.example",
+        "motivo": "comparten el usuario ext.logisoft@tarvia.example (33 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261011-011877",
+        "a": "ALR-20261013-003637",
+        "entidad": "user:ext.logisoft@tarvia.example",
+        "motivo": "comparten el usuario ext.logisoft@tarvia.example (63 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261013-003637",
+        "a": "ALR-20261014-011878",
+        "entidad": "user:ext.logisoft@tarvia.example",
+        "motivo": "comparten el usuario ext.logisoft@tarvia.example (7 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261021-011880",
+        "a": "ALR-20261022-007268",
+        "entidad": "user:ext.logisoft@tarvia.example",
+        "motivo": "comparten el usuario ext.logisoft@tarvia.example (39 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261022-007268",
+        "a": "ALR-20261025-011881",
+        "entidad": "user:ext.logisoft@tarvia.example",
+        "motivo": "comparten el usuario ext.logisoft@tarvia.example (55 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261011-011877",
+        "a": "ALR-20261011-011883",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (1 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261011-011883",
+        "a": "ALR-20261012-011884",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (24 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261014-011878",
+        "a": "ALR-20261014-011885",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (3 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261014-011885",
+        "a": "ALR-20261015-011886",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (24 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261015-011886",
+        "a": "ALR-20261018-011879",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (70 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261018-011879",
+        "a": "ALR-20261018-011887",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (2 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261018-011887",
+        "a": "ALR-20261019-011888",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (24 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261019-011888",
+        "a": "ALR-20261021-011880",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (47 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261021-011880",
+        "a": "ALR-20261021-011889",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261021-011889",
+        "a": "ALR-20261022-011890",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (24 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261025-011881",
+        "a": "ALR-20261025-011891",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (4 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261025-011891",
+        "a": "ALR-20261026-011892",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (25 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261026-011892",
+        "a": "ALR-20261028-011882",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (46 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261028-011882",
+        "a": "ALR-20261028-011893",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (2 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261028-011893",
+        "a": "ALR-20261029-011894",
+        "entidad": "ip:10.40.2.10",
+        "motivo": "comparten la IP 10.40.2.10 (24 h entre una y otra)"
+      }
+    ],
+    "entidades_clave": [
+      "ip:10.40.2.10",
+      "host:WMS01",
+      "dom:cdn-wms-metrics.example",
+      "user:ext.logisoft@tarvia.example",
+      "ip:77.90.185.20",
+      "ip:198.18.240.10",
+      "ip:10.99.60.77"
+    ],
+    "reglas": {
+      "UC-VPN-001": 9,
+      "UC-NET-006": 12
+    }
+  },
+  "prefilter": {
+    "ALR-20261009-002236": {
+      "alert_id": "ALR-20261009-002236",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261011-011877": {
+      "alert_id": "ALR-20261011-011877",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261011-011883": {
+      "alert_id": "ALR-20261011-011883",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261012-011884": {
+      "alert_id": "ALR-20261012-011884",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261013-003637": {
+      "alert_id": "ALR-20261013-003637",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1057 (Despliegue agente de monitorización 3.4 en servidores), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261014-011878": {
+      "alert_id": "ALR-20261014-011878",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1050 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261014-011885": {
+      "alert_id": "ALR-20261014-011885",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1050 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261015-011886": {
+      "alert_id": "ALR-20261015-011886",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261018-011879": {
+      "alert_id": "ALR-20261018-011879",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261018-011887": {
+      "alert_id": "ALR-20261018-011887",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261019-011888": {
+      "alert_id": "ALR-20261019-011888",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261021-011880": {
+      "alert_id": "ALR-20261021-011880",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1066 (Rotación de certificados de la VPN), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1051 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261021-011889": {
+      "alert_id": "ALR-20261021-011889",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1066 (Rotación de certificados de la VPN), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1051 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261022-011890": {
+      "alert_id": "ALR-20261022-011890",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261022-007268": {
+      "alert_id": "ALR-20261022-007268",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261025-011881": {
+      "alert_id": "ALR-20261025-011881",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1080 (Actualización del agente EDR a 7.15 en servidores), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261025-011891": {
+      "alert_id": "ALR-20261025-011891",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261026-011892": {
+      "alert_id": "ALR-20261026-011892",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261028-011882": {
+      "alert_id": "ALR-20261028-011882",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1052 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261028-011893": {
+      "alert_id": "ALR-20261028-011893",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1052 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261029-011894": {
+      "alert_id": "ALR-20261029-011894",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    }
+  }
+}

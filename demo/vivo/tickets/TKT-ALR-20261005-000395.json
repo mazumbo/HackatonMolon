@@ -1,0 +1,170 @@
+{
+  "ticket_id": "TKT-ALR-20261005-000395",
+  "alert_ids": [
+    "ALR-20261005-000395"
+  ],
+  "title": "Inventario software SCCM legítimo, cubierto por CHG-2026-1031",
+  "verdict": "benign_true_positive",
+  "confidence": 0.95,
+  "severity": "low",
+  "severity_rationale": "Regla medium (UC-EDR-002) x criticidad media (equipo WS-BCN-1993) = medium. final low. Actividad autorizada por chg-2026-1031. Hechos: criticidad: WS-BCN-1993 es portátil de media criticidad en zona HQ-USERS (asset A00993).",
+  "severity_factors": {
+    "rule_severity": "low",
+    "asset_criticality": "medium",
+    "confirmed_execution_or_access": false,
+    "privileged_or_vip": false,
+    "personal_or_payment_data": false,
+    "blocked_before_effect": false,
+    "authorized_flow": true,
+    "factor_evidence": {
+      "rule_severity": "Regla UC-EDR-002 (PowerShell codificado) de severidad media, pero actividad legítima autorizada (evt-ALR-20261005-000395).",
+      "asset_criticality": "WS-BCN-1993 es portátil de media criticidad en zona HQ-USERS (asset A00993).",
+      "authorized_flow": "CHG-2026-1031 autoriza el inventario de software con -EncodedCommand por SCCM en la ventana 08:00-10:00 CEST (evt-CHG-2026-1031)."
+    }
+  },
+  "affected": {},
+  "summary": "La alerta UC-EDR-002 se dispara por PowerShell con -EncodedCommand ejecutado por CcmExec.exe (agente SCCM) como SYSTEM en WS-BCN-1993 a las 06:02 UTC (08:02 CEST). El comando decodificado es un inventario de software estándar (Get-CimInstance Win32_Product → Out-File C:\\Windows\\CCM\\Inventory\\sw.json), autorizado por CHG-2026-1031 (ventana 08:00-10:00, origen SCCM, alcance todos los puestos). Las alertas relacionadas ALR-20261006-000765 y ALR-20261007-001296 sobre \"beaconing\" a teams.microsoft.com son falsos positivos del detector (dominio legítimo de Microsoft, no C2).",
+  "evidence": [
+    {
+      "source": "edr_events / EDR-0005357",
+      "event_id": "EDR-0005357",
+      "finding": "powershell.exe -EncodedCommand lanzado por CcmExec.exe como NT AUTHORITY\\SYSTEM en WS-BCN-1993 a 2026-10-05T06:02:00Z; firma Microsoft Windows."
+    },
+    {
+      "source": "get_alert / decoded_preview",
+      "event_id": "ALR-20261005-000395",
+      "finding": "Comando decodificado: Get-CimInstance Win32_Product ... Out-File C:\\Windows\\CCM\\Inventory\\sw.json (inventario de software SCCM legítimo)."
+    },
+    {
+      "source": "search_changes / CHG-2026-1031",
+      "event_id": "CHG-2026-1031",
+      "finding": "Script de inventario de software vía SCCM: svc_sccm ejecuta -EncodedCommand diariamente 08:00-10:00, alcance todos los puestos. Ventana, origen y alcance cubiertos."
+    },
+    {
+      "source": "get_alert / ALR-20261006-000765 y ALR-20261007-001296",
+      "event_id": "ALR-20261006-000765",
+      "finding": "Beaconing a teams.microsoft.com (dominio legítimo de Microsoft, age 1741-2248 días) en WS-BCN-1993. Falso positivo del detector de túnel DNS, no C2."
+    }
+  ],
+  "enrichment": [],
+  "mitre": [],
+  "recommended_actions": [
+    {
+      "action": "Cerrar la alerta como benign_true_positive",
+      "target": "ALR-20261005-000395",
+      "justification": "Actividad de inventario SCCM autorizada por CHG-2026-1031, cumple ventana, origen y alcance.",
+      "requires_approval": false
+    },
+    {
+      "action": "Cerrar como falso positivo",
+      "target": "ALR-20261006-000765 y ALR-20261007-001296",
+      "justification": "Beaconing a teams.microsoft.com (dominio legítimo de Microsoft), no representa un C2 real.",
+      "requires_approval": false
+    }
+  ],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": false,
+    "to": "",
+    "reason": ""
+  },
+  "open_questions": [],
+  "triage_seconds": 18.1,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261005-000395",
+      "created_at": "2026-10-05T06:04:27.000Z",
+      "rule_id": "UC-EDR-002",
+      "rule_name": "PowerShell con comando codificado",
+      "severity": "medium",
+      "source_product": "EDR"
+    }
+  ],
+  "first_alert_at": "2026-10-05T06:04:27.000Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261005-000395"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261005-000395\", \"created_at\": \"2026-10-05T06:04:27.000Z\", \"source_product\": \"EDR\", \"rule_id\": \"UC-EDR-002\", \"rule_name\": \"PowerShell con comando codificado\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Execution\", \"technique_id\": \"T1059.001\", \"technique\": \"PowerShell\"}, \"description\": \"Ejecución de PowerShell con -EncodedCommand.\", \"entities\": {\"hosts\": [{\"hostname\": \"WS-BCN-1993\", \"ip\": \"10.10.3.210\"}], \"processes\": [{\"name\": \"powershell.exe\", \"parent\": \"CcmExec.exe\"}]}, \"evidence\": {\"parent\": \"CcmExec.exe (agente SCCM)\", \"user\": \"SY"
+    },
+    {
+      "tool": "search_changes",
+      "args": {
+        "q": ""
+      },
+      "result": "{\"status\": 200, \"body\": [{\"id\": \"CHG-2026-1042\", \"titulo\": \"Pentest externo de la tienda online\", \"inicio\": \"2026-10-08 08:00\", \"fin\": \"2026-10-10 18:00\", \"solicitante\": \"Auditora externa\", \"detalle\": \"IPs origen 192.0.2.10-12; alcance www.tarvia.example y api; sin DoS\", \"alcance\": \"WEB-ECOM01..04\"}, {\"id\": \"CHG-2026-1049\", \"titulo\": \"Escaneo semanal de vulnerabilidades\", \"inicio\": \"2026-10-07 01:00\", \"fin\": \"2026-10-07 05:00\", \"solicitante\": \"Ciberseguridad\", \"detalle\": \"Origen NESSUS01 (svc_scanner); se repite cada miércoles\", \"alcance\": \"Todas las redes salvo OT\"}, {\"id\": \"CHG-2026-1050\", \""
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "WS-BCN-1993"
+      },
+      "result": "{\"status\": 200, \"body\": {\"asset_id\": \"A00993\", \"hostname\": \"WS-BCN-1993\", \"ip\": \"10.10.3.210\", \"type\": \"Portátil\", \"os\": \"Windows 11 23H2\", \"criticality\": \"Media\", \"zone\": \"HQ-USERS\", \"location\": \"Barcelona HQ\", \"business_service\": \"Puesto de trabajo\", \"owner_upn\": \"david.sanz@tarvia.example\", \"internet_facing\": \"False\", \"edr_installed\": \"True\", \"description\": \"\", \"vulnerabilities\": [{\"hostname\": \"WS-BCN-1993\", \"id\": \"CVE-2025-49704\", \"producto\": \"Google Chrome\", \"severidad_cvss\": \"7.8\", \"estado\": \"abierta\", \"detectada\": \"2026-10-01\", \"notas\": \"Pendiente del ciclo mensual de parches.\"}]}}"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261006-000765"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261006-000765\", \"created_at\": \"2026-10-06T06:46:24.917Z\", \"source_product\": \"PROXY\", \"rule_id\": \"UC-NET-001\", \"rule_name\": \"Beaconing a dominio poco frecuente\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Command and Control\", \"technique_id\": \"T1071.001\", \"technique\": \"Web Protocols\"}, \"description\": \"Conexiones periódicas con baja varianza a un dominio visto por menos de 3 equipos.\", \"entities\": {\"hosts\": [{\"hostname\": \"WS-BCN-1993\", \"ip\": \"10.10.3.210\"}], \"domains\": [\"teams.microsoft.com\"]}, \"evidence\": {\"domain\": \"teams.microsoft.c"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261007-001296"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261007-001296\", \"created_at\": \"2026-10-07T08:46:04.061Z\", \"source_product\": \"PROXY\", \"rule_id\": \"UC-NET-001\", \"rule_name\": \"Beaconing a dominio poco frecuente\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Command and Control\", \"technique_id\": \"T1071.001\", \"technique\": \"Web Protocols\"}, \"description\": \"Conexiones periódicas con baja varianza a un dominio visto por menos de 3 equipos.\", \"entities\": {\"hosts\": [{\"hostname\": \"WS-BCN-1993\", \"ip\": \"10.10.3.210\"}], \"domains\": [\"teams.microsoft.com\"]}, \"evidence\": {\"domain\": \"teams.microsoft.c"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "edr_events",
+        "q": "WS-BCN-1993 powershell",
+        "desde": "2026-10-04T00:00:00Z",
+        "hasta": "2026-10-06T00:00:00Z"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"EDR-0005357\", \"timestamp\": \"2026-10-05T06:02:00.000Z\", \"event_type\": \"process_start\", \"hostname\": \"WS-BCN-1993\", \"user\": \"NT AUTHORITY\\\\SYSTEM\", \"process_name\": \"powershell.exe\", \"process_path\": \"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\", \"command_line\": \"powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABpAG4AdgAgAD0AIABHAGUAdAAtAEMAaQBtAEkAbgBzAHQAYQBuAGMAZQAgAFcAaQBuADMAMgBfAFAAcgBvAGQAdQBjAHQA\", \"parent_name\": \"CcmExec.exe\", \"pid\": 6695, \"parent_pid\": 188"
+    }
+  ],
+  "status": "closed",
+  "usage": {
+    "input_tokens": 13030,
+    "output_tokens": 1733,
+    "steps": 2,
+    "llm_seconds": [
+      2.6,
+      11.1
+    ],
+    "tools_seconds": 2.3,
+    "prefetch_seconds": 2.0,
+    "llm_seconds_total": 13.7
+  },
+  "model": "ornith",
+  "group": {
+    "grupo_id": "GRP-ALR-20261005-000395",
+    "uniones": [],
+    "entidades_clave": [],
+    "reglas": {
+      "UC-EDR-002": 1
+    }
+  },
+  "prefilter": {
+    "ALR-20261005-000395": {
+      "alert_id": "ALR-20261005-000395",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "Parecería cerrable (PowerShell lanzado por el agente SCCM como SYSTEM a las 08:04, franja del inventario diario), pero no se cierra:",
+        "ip:10.10.3.210 aparece en otras alertas sin explicar: ALR-20261006-000765, ALR-20261007-001296",
+        "host:WS-BCN-1993 aparece en otras alertas sin explicar: ALR-20261006-000765, ALR-20261007-001296"
+      ]
+    }
+  }
+}

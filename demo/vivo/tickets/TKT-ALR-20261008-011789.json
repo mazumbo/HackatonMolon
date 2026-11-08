@@ -1,0 +1,413 @@
+{
+  "ticket_id": "TKT-ALR-20261008-011789",
+  "alert_ids": [
+    "ALR-20261007-011786",
+    "ALR-20261007-011787",
+    "ALR-20261007-011788",
+    "ALR-20261007-011785",
+    "ALR-20261008-011789"
+  ],
+  "title": "Cadena AiTM contra Laura Ferrer: phishing, exfiltración y fraude de IBAN",
+  "verdict": "true_positive",
+  "confidence": 0.97,
+  "severity": "critical",
+  "severity_rationale": "Regla high (UC-EML-003, UC-EML-004, UC-IDP-004, UC-IDP-005...) x criticidad media (usuario laura.ferrer2@tarvia.example) = high. +1: acceso o ejecución confirmados en los datos; datos personales o pagos implicados; el LLM confirma ejecución o acceso; el LLM indica identidad VIP o privilegiada; el LLM indica datos personales o pagos. final critical. El llm dice que se bloqueó, pero los datos no lo confirman: no se baja. El llm dice que es un flujo autorizado, pero no se ha podido verificar en el calendario: se ignora.",
+  "severity_factors": {
+    "rule_severity": "high",
+    "asset_criticality": "medium",
+    "confirmed_execution_or_access": "Sesión de O365 exitosa desde 203.0.113.45 (AS64601, hosting NL) con la misma sesión s-c01aitm0001 reutilizada con python-requests (SIGN-0083866, risk=high) y acceso a 26-33 elementos de buzón vía API (AUD-0000788/789/805/806) — acceso real confirmado, no solo intento.",
+    "privileged_or_vip": "Cuenta no privilegiada ni VIP (get_user: privileged=False, vip=False).",
+    "personal_or_payment_data": "Acceso real a buzón con correos sobre 'factura/IBAN/transferencia/Montroig' (AUD-0000787) y envío real de petición de cambio de IBAN a 148.320,00 € (EML-0062205) — datos financieros reales expuestos/sacados.",
+    "blocked_before_effect": "No bloqueado: el clic (CLK-0017753) y los inicios de sesión (SIGN-0083865/866) fueron exitosos; la regla de phishing se reclasificó tras la entrega y el correo de fraude se entregó (verdict=clean).",
+    "authorized_flow": "Ninguna alerta cubierta por cambio aprobado (verificación de calendario: 0 cambios encajan en origen/hora/alcance)."
+  },
+  "affected": {},
+  "summary": "Ataque real de tipo \"login\" (AiTM) contra la cuenta de Laura Ferrer (E-commerce, no VIP/privilegiada): clic en phishing el 07/10 07:42, inicio de sesión desde hosting de Ámsterdam (203.0.113.45, AS64601) 07:43, reutilización del token con python-requests 07:49, regla de buzón para ocultar correos financieros 07:58 y acceso masivo a bandeja (26-33 items) 08:03. El 08/10 08:15 se envió un correo interno desde esa cuenta a la DPO Jordi Serra solicitando cambiar el IBAN de Textiles Montroig (148.320,00 €) con PDF adjunto (fraude por contenido, no malware). No hay cambio aprobado que lo autorice.",
+  "evidence": [
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0083865",
+      "finding": "Login O365 exitoso de laura.ferrer2 desde 203.0.113.45 (Ámsterdam, AS64601, hosting), MFA approved, device_compliant=false, risk=medium (07:43:20Z)."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0083866",
+      "finding": "Misma sesión s-c01aitm0001 reutilizada con user_agent python-requests/2.32.3 desde 203.0.113.45, risk=high (07:49:00Z) — reutilización de token de sesión (AiTM)."
+    },
+    {
+      "source": "idp_audit",
+      "event_id": "AUD-0000787",
+      "finding": "New-InboxRule con nombre '.' y keywords factura/IBAN/transferencia/pago/Montroig que mueve a 'RSS Feeds' y marca como leído (07:58:00Z) — ocultación de actividad."
+    },
+    {
+      "source": "idp_audit",
+      "event_id": "AUD-0000788",
+      "finding": "MailItemsAccessed de 26 elementos de Bandeja de entrada vía python-requests desde 203.0.113.45 (08:03:00Z); AUD-0000789/805/806 repiten acceso a bandeja/envidos (08:03-08:05Z) — exfiltración de correo."
+    },
+    {
+      "source": "email_clicks",
+      "event_id": "CLK-0017753",
+      "finding": "Clic de laura.ferrer2 desde WS-BCN-1380 (10.10.2.141) a https://tarvia-sso-login.example/auth/v2/sso?client=tarvia&ref=Zm9ybWFz (07:42:00Z); URL reclasificada como phishing tras la entrega."
+    },
+    {
+      "source": "email",
+      "event_id": "EML-0062205",
+      "finding": "Correo interno enviado 08/10 08:15 desde laura.ferrer2 a jordi.serra2: 'Textiles Montroig ha cambiado de banco... actualiza el IBAN' (148.320,00 €, IBAN a LT), adjunto Certificado_titularidad_Montroig.pdf (sandbox=clean, fraude por contenido)."
+    }
+  ],
+  "enrichment": [],
+  "mitre": [],
+  "recommended_actions": [],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": true,
+    "to": "N2 de guardia (telefono)",
+    "reason": "true_positive de severidad critical; ejecucion/robo de credenciales/persistencia; posible salida de datos personales (implica DPO); fraude economico; cadena de ataque"
+  },
+  "open_questions": [],
+  "triage_seconds": 44.7,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261007-011786",
+      "created_at": "2026-10-07T07:44:52.000Z",
+      "rule_id": "UC-IDP-004",
+      "rule_name": "Inicio de sesión exitoso desde infraestructura anónima o de hosting",
+      "severity": "high",
+      "source_product": "IDP"
+    },
+    {
+      "alert_id": "ALR-20261007-011787",
+      "created_at": "2026-10-07T07:53:09.000Z",
+      "rule_id": "UC-IDP-006",
+      "rule_name": "Reutilización de token de sesión desde otro origen (posible AiTM)",
+      "severity": "high",
+      "source_product": "IDP"
+    },
+    {
+      "alert_id": "ALR-20261007-011788",
+      "created_at": "2026-10-07T08:03:49.000Z",
+      "rule_id": "UC-IDP-005",
+      "rule_name": "Regla de buzón sospechosa",
+      "severity": "high",
+      "source_product": "IDP"
+    },
+    {
+      "alert_id": "ALR-20261007-011785",
+      "created_at": "2026-10-07T08:35:15.000Z",
+      "rule_id": "UC-EML-003",
+      "rule_name": "Clic en URL de phishing",
+      "severity": "high",
+      "source_product": "EMAIL_GW"
+    },
+    {
+      "alert_id": "ALR-20261008-011789",
+      "created_at": "2026-10-08T08:19:14.000Z",
+      "rule_id": "UC-EML-004",
+      "rule_name": "Petición de cambio de datos bancarios por correo",
+      "severity": "medium",
+      "source_product": "EMAIL_GW"
+    }
+  ],
+  "first_alert_at": "2026-10-07T07:44:52.000Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "203.0.113.45"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"203.0.113.45\", \"tip\": null, \"geo\": {\"ip\": \"203.0.113.45\", \"country\": \"NL\", \"city\": \"Ámsterdam\", \"asn\": \"AS64601\", \"as_org\": \"Hosting Ámsterdam BV (simulado)\", \"is_tor\": \"False\", \"is_vpn_provider\": \"False\", \"is_hosting\": \"True\", \"is_residential_proxy\": \"False\"}}}"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261007-011788"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261007-011788\", \"created_at\": \"2026-10-07T08:03:49.000Z\", \"source_product\": \"IDP\", \"rule_id\": \"UC-IDP-005\", \"rule_name\": \"Regla de buzón sospechosa\", \"severity\": \"high\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Collection\", \"technique_id\": \"T1114.003\", \"technique\": \"Email Forwarding Rule\"}, \"description\": \"Regla que reenvía, borra o mueve correos con palabras clave financieras.\", \"entities\": {\"users\": [{\"upn\": \"laura.ferrer2@tarvia.example\", \"display_name\": \"Laura Ferrer\"}], \"ips\": [\"203.0.113.45\"]}, \"evidence\": {\"rule_name\": \".\", \"keywords\": [\"factura\""
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261007-011785"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261007-011785\", \"created_at\": \"2026-10-07T08:35:15.000Z\", \"source_product\": \"EMAIL_GW\", \"rule_id\": \"UC-EML-003\", \"rule_name\": \"Clic en URL de phishing\", \"severity\": \"high\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Initial Access\", \"technique_id\": \"T1566.002\", \"technique\": \"Spearphishing Link\"}, \"description\": \"Un usuario hizo clic en una URL que la reescritura de enlaces reclasificó como phishing tras la entrega.\", \"entities\": {\"users\": [{\"upn\": \"laura.ferrer2@tarvia.example\", \"display_name\": \"Laura Ferrer\"}], \"hosts\": [{\"hostname\": \"WS-BCN-1380\", \"ip\":"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261008-011789"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261008-011789\", \"created_at\": \"2026-10-08T08:19:14.000Z\", \"source_product\": \"EMAIL_GW\", \"rule_id\": \"UC-EML-004\", \"rule_name\": \"Petición de cambio de datos bancarios por correo\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Impact\", \"technique_id\": \"T1657\", \"technique\": \"Financial Theft\"}, \"description\": \"Correo interno o externo que solicita modificar un IBAN de proveedor o empleado.\", \"entities\": {\"users\": [{\"upn\": \"laura.ferrer2@tarvia.example\", \"display_name\": \"Laura Ferrer\"}, {\"upn\": \"jordi.serra2@tarvia.example\", \"display_name\": \""
+    },
+    {
+      "tool": "search_changes",
+      "args": {
+        "q": ""
+      },
+      "result": "{\"status\": 200, \"body\": [{\"id\": \"CHG-2026-1042\", \"titulo\": \"Pentest externo de la tienda online\", \"inicio\": \"2026-10-08 08:00\", \"fin\": \"2026-10-10 18:00\", \"solicitante\": \"Auditora externa\", \"detalle\": \"IPs origen 192.0.2.10-12; alcance www.tarvia.example y api; sin DoS\", \"alcance\": \"WEB-ECOM01..04\"}, {\"id\": \"CHG-2026-1049\", \"titulo\": \"Escaneo semanal de vulnerabilidades\", \"inicio\": \"2026-10-07 01:00\", \"fin\": \"2026-10-07 05:00\", \"solicitante\": \"Ciberseguridad\", \"detalle\": \"Origen NESSUS01 (svc_scanner); se repite cada miércoles\", \"alcance\": \"Todas las redes salvo OT\"}, {\"id\": \"CHG-2026-1050\", \""
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261007-011786"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261007-011786\", \"created_at\": \"2026-10-07T07:44:52.000Z\", \"source_product\": \"IDP\", \"rule_id\": \"UC-IDP-004\", \"rule_name\": \"Inicio de sesión exitoso desde infraestructura anónima o de hosting\", \"severity\": \"high\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Initial Access\", \"technique_id\": \"T1078\", \"technique\": \"Valid Accounts\"}, \"description\": \"Login correcto desde Tor, VPN comercial o proveedor de hosting.\", \"entities\": {\"users\": [{\"upn\": \"laura.ferrer2@tarvia.example\", \"display_name\": \"Laura Ferrer\"}], \"ips\": [\"203.0.113.45\"]}, \"evidence\": {\"app\": \"Office"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261007-011787"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261007-011787\", \"created_at\": \"2026-10-07T07:53:09.000Z\", \"source_product\": \"IDP\", \"rule_id\": \"UC-IDP-006\", \"rule_name\": \"Reutilización de token de sesión desde otro origen (posible AiTM)\", \"severity\": \"high\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Credential Access\", \"technique_id\": \"T1539\", \"technique\": \"Steal Web Session Cookie\"}, \"description\": \"La misma sesión aparece desde una IP y dispositivo distintos al de la autenticación original.\", \"entities\": {\"users\": [{\"upn\": \"laura.ferrer2@tarvia.example\", \"display_name\": \"Laura Ferrer\"}], \"ips\": [\"203"
+    },
+    {
+      "tool": "get_user",
+      "args": {
+        "key": "laura.ferrer2@tarvia.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"user_id\": \"U1380\", \"username\": \"laura.ferrer2\", \"upn\": \"laura.ferrer2@tarvia.example\", \"display_name\": \"Laura Ferrer\", \"department\": \"E-commerce\", \"title\": \"QA Engineer\", \"location\": \"Barcelona HQ\", \"manager_upn\": \"sergio.puig@tarvia.example\", \"account_type\": \"user\", \"privileged\": \"False\", \"vip\": \"False\", \"mfa_method\": \"push\", \"status\": \"active\", \"created\": \"2019-03-01\", \"workstation\": \"WS-BCN-1380\", \"notes\": \"\", \"hr_events\": []}}"
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "WS-BCN-1380"
+      },
+      "result": "{\"status\": 200, \"body\": {\"asset_id\": \"A00380\", \"hostname\": \"WS-BCN-1380\", \"ip\": \"10.10.2.141\", \"type\": \"Portátil\", \"os\": \"Windows 11 23H2\", \"criticality\": \"Media\", \"zone\": \"HQ-USERS\", \"location\": \"Barcelona HQ\", \"business_service\": \"Puesto de trabajo\", \"owner_upn\": \"laura.ferrer2@tarvia.example\", \"internet_facing\": \"False\", \"edr_installed\": \"True\", \"description\": \"\", \"vulnerabilities\": []}}"
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "tarvia-sso-login.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"tarvia-sso-login.example\", \"tip\": null, \"geo\": null}}"
+    },
+    {
+      "tool": "get_user",
+      "args": {
+        "key": "jordi.serra2@tarvia.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"user_id\": \"U1977\", \"username\": \"jordi.serra2\", \"upn\": \"jordi.serra2@tarvia.example\", \"display_name\": \"Jordi Serra\", \"department\": \"Legal y Cumplimiento\", \"title\": \"DPO\", \"location\": \"Barcelona HQ\", \"manager_upn\": \"enric.coll@tarvia.example\", \"account_type\": \"user\", \"privileged\": \"False\", \"vip\": \"False\", \"mfa_method\": \"totp\", \"status\": \"active\", \"created\": \"2019-03-01\", \"workstation\": \"WS-BCN-1977\", \"notes\": \"\", \"hr_events\": [{\"fecha\": \"2026-10-01\", \"tipo\": \"vacaciones\", \"usuario\": \"jordi.serra2@tarvia.example\", \"detalle\": \"Vacaciones 26/10 a 30/10 (sustituye Tesorería"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "email_clicks",
+        "q": "CLK-0017753 tarvia-sso-login laura.ferrer2",
+        "limit": 10
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"CLK-0017753\", \"timestamp\": \"2026-10-07T07:42:00.000Z\", \"user\": \"laura.ferrer2@tarvia.example\", \"url\": \"https://tarvia-sso-login.example/auth/v2/sso?client=tarvia&ref=Zm9ybWFz\", \"message_id\": \"<7f3a9c21e4b0@firma-electronica-docs.example>\", \"action\": \"allowed\", \"verdict_at_click\": \"unknown\", \"src_ip\": \"10.10.2.141\"}], \"query_note\": \"AND de ['CLK-0017753', 'tarvia-sso-login', 'laura.ferrer2']: se buscó 'CLK-0017753' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_audit",
+        "q": "AUD-0000787 laura.ferrer2 regla buzón forward",
+        "limit": 10
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['AUD-0000787', 'laura.ferrer2', 'regla', 'buzón', 'forward']: se buscó 'regla' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "SIGN-0083865 SIGN-0083866 laura.ferrer2",
+        "limit": 10
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['SIGN-0083865', 'SIGN-0083866', 'laura.ferrer2']: se buscó 'SIGN-0083865' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "email",
+        "q": "EML-0062205 EML-0062204 laura.ferrer2 IBAN",
+        "limit": 10
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['EML-0062205', 'EML-0062204', 'laura.ferrer2', 'IBAN']: se buscó 'EML-0062205' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_audit",
+        "q": "laura.ferrer2",
+        "limit": 20
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 20, \"truncated\": true, \"items\": [{\"event_id\": \"AUD-0000787\", \"timestamp\": \"2026-10-07T07:58:00.000Z\", \"actor_upn\": \"laura.ferrer2@tarvia.example\", \"operation\": \"New-InboxRule\", \"target\": \"laura.ferrer2@tarvia.example\", \"src_ip\": \"203.0.113.45\", \"details\": {\"rule_name\": \".\", \"conditions\": {\"body_or_subject_contains\": [\"factura\", \"IBAN\", \"transferencia\", \"pago\", \"Montroig\"]}, \"actions\": {\"move_to_folder\": \"RSS Feeds\", \"mark_as_read\": true}}}, {\"event_id\": \"AUD-0000788\", \"timestamp\": \"2026-10-07T08:03:00.000Z\", \"actor_upn\": \"laura.ferrer2@tarvia.example\", \"operat"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "laura.ferrer2",
+        "limit": 20
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 20, \"truncated\": true, \"items\": [{\"event_id\": \"SIGN-0001259\", \"timestamp\": \"2026-10-05T07:26:44.597Z\", \"user_upn\": \"laura.ferrer2@tarvia.example\", \"app\": \"Microsoft Teams\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"push\", \"mfa_result\": \"approved\", \"src_ip\": \"198.18.200.10\", \"country\": \"ES\", \"city\": \"Barcelona\", \"asn\": \"AS64610\", \"user_agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0\", \"device_id\": \"dev-86e7330e\", \"device_compliant\": true, \"session_id\": \"s-cb77"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "email_clicks",
+        "q": "laura.ferrer2",
+        "limit": 20
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 15, \"truncated\": false, \"items\": [{\"event_id\": \"CLK-0017753\", \"timestamp\": \"2026-10-07T07:42:00.000Z\", \"user\": \"laura.ferrer2@tarvia.example\", \"url\": \"https://tarvia-sso-login.example/auth/v2/sso?client=tarvia&ref=Zm9ybWFz\", \"message_id\": \"<7f3a9c21e4b0@firma-electronica-docs.example>\", \"action\": \"allowed\", \"verdict_at_click\": \"unknown\", \"src_ip\": \"10.10.2.141\"}, {\"event_id\": \"CLK-0001873\", \"timestamp\": \"2026-10-07T08:46:19.938Z\", \"user\": \"laura.ferrer2@tarvia.example\", \"url\": \"https://salesforce.com/l/8bb7f4\", \"message_id\": \"<b42adb5ab42cb8d0@salesforce.com>\""
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "email",
+        "q": "laura.ferrer2 IBAN OR \"cambio cuenta\" OR \"datos bancarios\"",
+        "limit": 20
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"EML-0062205\", \"timestamp\": \"2026-10-08T08:15:00.000Z\", \"direction\": \"internal\", \"message_id\": \"<CAF8x9-bec-0001@tarvia.example>\", \"sender\": \"laura.ferrer2@tarvia.example\", \"recipients\": [\"jordi.serra2@tarvia.example\"], \"subject\": \"RE: Pagos semana 41 - cambio cuenta Textiles Montroig\", \"attachments\": [{\"name\": \"Certificado_titularidad_Montroig.pdf\", \"sha256\": \"6388853feba384e866cfdc2bf48f9c639544e098701bb0576e44fdc24ced9390\", \"size\": 184220}], \"urls\": [], \"verdict\": \"clean\", \"action\": \"delivered\", \"spf\": \"pass\", \""
+    },
+    {
+      "tool": "get_sandbox",
+      "args": {
+        "sha256": "6388853feba384e866cfdc2bf48f9c639544e098701bb0576e44fdc24ced9390"
+      },
+      "result": "{\"status\": 200, \"body\": {\"sha256\": \"6388853feba384e866cfdc2bf48f9c639544e098701bb0576e44fdc24ced9390\", \"md5\": \"9676476f3c6a3dab55857f4e6002b2cf\", \"file_name\": \"Certificado_titularidad_Montroig.pdf\", \"verdict\": \"clean\", \"score\": 5, \"malware_family\": \"\", \"behaviors\": [\"PDF sin JavaScript ni enlaces\", \"Metadatos: creado con LibreOffice el 08/10/2026 a las 08:58\"], \"network\": {}, \"mitre\": [], \"dropped_files\": [], \"analysis_env\": \"Windows 10 x64 (sandbox simulada)\", \"analyzed_at\": \"2026-10-18T09:00:00Z\", \"note\": \"Sin código malicioso. El fraude está en el contenido (IBAN falso), no en el fichero.\"}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "limit": 5,
+        "q": "SIGN-0083866",
+        "source": "idp_signins"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"SIGN-0083866\", \"timestamp\": \"2026-10-07T07:49:00.000Z\", \"user_upn\": \"laura.ferrer2@tarvia.example\", \"app\": \"Office 365 Exchange Online\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"push\", \"mfa_result\": \"satisfied_by_session\", \"src_ip\": \"203.0.113.45\", \"country\": \"NL\", \"city\": \"Ámsterdam\", \"asn\": \"AS64601\", \"user_agent\": \"python-requests/2.32.3\", \"device_id\": \"\", \"device_compliant\": false, \"session_id\": \"s-c01aitm0001\", \"risk_level\": \"high\", \"conditional_access\": \"success\"}]}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "limit": 5,
+        "q": "SIGN-0083865",
+        "source": "idp_signins"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"SIGN-0083865\", \"timestamp\": \"2026-10-07T07:43:20.000Z\", \"user_upn\": \"laura.ferrer2@tarvia.example\", \"app\": \"Office 365 Exchange Online\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"push\", \"mfa_result\": \"approved\", \"src_ip\": \"203.0.113.45\", \"country\": \"NL\", \"city\": \"Ámsterdam\", \"asn\": \"AS64601\", \"user_agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0\", \"device_id\": \"\", \"device_compliant\": false, \"session_id\": \"s-c01ai"
+    }
+  ],
+  "status": "open",
+  "usage": {
+    "input_tokens": 53010,
+    "output_tokens": 2392,
+    "steps": 4,
+    "llm_seconds": [
+      4.1,
+      3.0,
+      4.8,
+      14.6
+    ],
+    "tools_seconds": 13.9,
+    "prefetch_seconds": 4.1,
+    "llm_seconds_total": 26.5
+  },
+  "model": "ornith",
+  "group": {
+    "grupo_id": "GRP-ALR-20261007-011786",
+    "uniones": [
+      {
+        "de": "ALR-20261007-011786",
+        "a": "ALR-20261007-011787",
+        "entidad": "user:laura.ferrer2@tarvia.example",
+        "motivo": "comparten el usuario laura.ferrer2@tarvia.example (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261007-011787",
+        "a": "ALR-20261007-011788",
+        "entidad": "user:laura.ferrer2@tarvia.example",
+        "motivo": "comparten el usuario laura.ferrer2@tarvia.example (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261007-011788",
+        "a": "ALR-20261007-011785",
+        "entidad": "user:laura.ferrer2@tarvia.example",
+        "motivo": "comparten el usuario laura.ferrer2@tarvia.example (1 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261007-011785",
+        "a": "ALR-20261008-011789",
+        "entidad": "user:laura.ferrer2@tarvia.example",
+        "motivo": "comparten el usuario laura.ferrer2@tarvia.example (24 h entre una y otra)"
+      }
+    ],
+    "entidades_clave": [
+      "user:laura.ferrer2@tarvia.example",
+      "ip:203.0.113.45"
+    ],
+    "reglas": {
+      "UC-IDP-004": 1,
+      "UC-IDP-006": 1,
+      "UC-IDP-005": 1,
+      "UC-EML-003": 1,
+      "UC-EML-004": 1
+    }
+  },
+  "prefilter": {
+    "ALR-20261007-011786": {
+      "alert_id": "ALR-20261007-011786",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1049 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261007-011787": {
+      "alert_id": "ALR-20261007-011787",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1049 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261007-011788": {
+      "alert_id": "ALR-20261007-011788",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1049 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261007-011785": {
+      "alert_id": "ALR-20261007-011785",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1049 (Escaneo semanal de vulnerabilidades), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261008-011789": {
+      "alert_id": "ALR-20261008-011789",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    }
+  }
+}

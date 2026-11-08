@@ -1,0 +1,61 @@
+{
+  "ticket_id": "TKT-ALR-20261008-011833",
+  "alert_ids": [
+    "ALR-20261008-011833"
+  ],
+  "title": "Actividad autorizada: Ataque de inyección contra aplicación web",
+  "verdict": "benign_true_positive",
+  "confidence": 0.9,
+  "severity": "informational",
+  "severity_rationale": "Prefiltro del motor: IP 192.0.2.11 del pentest autorizado, dentro de su ventana",
+  "affected": {},
+  "summary": "Cerrada por código sin LLM. IP 192.0.2.11 del pentest autorizado, dentro de su ventana",
+  "evidence": [
+    {
+      "source": "changes",
+      "event_id": "CHG-2026-1042",
+      "finding": "IP 192.0.2.11 del pentest autorizado, dentro de su ventana"
+    }
+  ],
+  "enrichment": [],
+  "mitre": [],
+  "recommended_actions": [],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": false,
+    "to": "",
+    "reason": ""
+  },
+  "open_questions": [],
+  "triage_seconds": 0.0,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261008-011833",
+      "created_at": "2026-10-08T06:59:14.000Z",
+      "rule_id": "UC-WEB-001",
+      "rule_name": "Ataque de inyección contra aplicación web",
+      "severity": "low",
+      "source_product": "WAF"
+    }
+  ],
+  "first_alert_at": "2026-10-08T06:59:14.000Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [],
+  "status": "closed",
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "steps": 0
+  },
+  "model": "prefiltro",
+  "prefilter": {
+    "alert_id": "ALR-20261008-011833",
+    "decision": "cerrar",
+    "veredicto": "benign_true_positive",
+    "severidad": "informational",
+    "motivo": "IP 192.0.2.11 del pentest autorizado, dentro de su ventana",
+    "cambio": "CHG-2026-1042",
+    "pistas": []
+  }
+}

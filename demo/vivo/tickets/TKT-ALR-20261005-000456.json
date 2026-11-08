@@ -1,0 +1,61 @@
+{
+  "ticket_id": "TKT-ALR-20261005-000456",
+  "alert_ids": [
+    "ALR-20261005-000456"
+  ],
+  "title": "Falso positivo: Posible túnel DNS",
+  "verdict": "false_positive",
+  "confidence": 0.9,
+  "severity": "informational",
+  "severity_rationale": "Prefiltro del motor: consultas DNS codificadas de McAfee (avqs.mcafee.com): lo hacen 132 equipos y el dominio tiene 7125 días; no es un túnel",
+  "affected": {},
+  "summary": "Cerrada por código sin LLM. consultas DNS codificadas de McAfee (avqs.mcafee.com): lo hacen 132 equipos y el dominio tiene 7125 días; no es un túnel",
+  "evidence": [
+    {
+      "source": "prefiltro",
+      "event_id": "",
+      "finding": "consultas DNS codificadas de McAfee (avqs.mcafee.com): lo hacen 132 equipos y el dominio tiene 7125 días; no es un túnel"
+    }
+  ],
+  "enrichment": [],
+  "mitre": [],
+  "recommended_actions": [],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": false,
+    "to": "",
+    "reason": ""
+  },
+  "open_questions": [],
+  "triage_seconds": 0.0,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261005-000456",
+      "created_at": "2026-10-05T08:11:01.359Z",
+      "rule_id": "UC-NET-006",
+      "rule_name": "Posible túnel DNS",
+      "severity": "medium",
+      "source_product": "DNS"
+    }
+  ],
+  "first_alert_at": "2026-10-05T08:11:01.359Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [],
+  "status": "closed",
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "steps": 0
+  },
+  "model": "prefiltro",
+  "prefilter": {
+    "alert_id": "ALR-20261005-000456",
+    "decision": "cerrar",
+    "veredicto": "false_positive",
+    "severidad": "informational",
+    "motivo": "consultas DNS codificadas de McAfee (avqs.mcafee.com): lo hacen 132 equipos y el dominio tiene 7125 días; no es un túnel",
+    "cambio": null,
+    "pistas": []
+  }
+}

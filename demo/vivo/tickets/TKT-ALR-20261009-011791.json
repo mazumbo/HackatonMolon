@@ -1,0 +1,545 @@
+{
+  "ticket_id": "TKT-ALR-20261009-011791",
+  "alert_ids": [
+    "ALR-20261009-011790",
+    "ALR-20261009-011791",
+    "ALR-20261009-011792",
+    "ALR-20261009-011793",
+    "ALR-20261010-011794",
+    "ALR-20261010-011795",
+    "ALR-20261010-011796",
+    "ALR-20261010-011797",
+    "ALR-20261010-011798",
+    "ALR-20261018-011895",
+    "ALR-20261018-011896"
+  ],
+  "title": "Ransomware Cobalt Strike: intrusión completa en la red",
+  "verdict": "true_positive",
+  "confidence": 0.98,
+  "severity": "critical",
+  "severity_rationale": "Regla critical (UC-EDR-001, UC-EDR-004, UC-EDR-007, UC-EDR-008...) x criticidad alta (equipo FS01) = critical. +1: identidad VIP o privilegiada (adm.aortega@tarvia.example); acceso o ejecución confirmados en los datos; el LLM confirma ejecución o acceso; el LLM indica identidad VIP o privilegiada. final critical. El llm dice que se bloqueó, pero los datos no lo confirman: no se baja. Hechos: criticidad: FS01 es servidor de ficheros de criticality Alta que almacena Finanzas, Compras y Personas (evt EDR-0123415/0123416); acceso/ejecución: Beacon Cobalt Strike confirmado en sandbox (evt EDR-0123414 svchelper.exe en FS01; EDR-0123435 spoolhlp.exe en PRINT01) y C2 a 107.174.115.43 (FW-0025180); VIP/privilegios: adm.aortega es cuenta privilegiada (admin, FIDO2) usada desde un puesto de trabajo ajeno a JUMP01; añadió svc_print_upd a Domain Admins (ADE-0000571); bloqueo: EDR bloqueó el borrado de shadow copies en FS01 (evt EDR-0123415, edr_action=blocked) y la detención del agente EDR en PRINT01.",
+  "severity_factors": {
+    "rule_severity": "critical",
+    "asset_criticality": "high",
+    "confirmed_execution_or_access": true,
+    "privileged_or_vip": true,
+    "personal_or_payment_data": false,
+    "blocked_before_effect": true,
+    "authorized_flow": false,
+    "factor_evidence": {
+      "rule_severity": "Múltiples reglas críticas: LSASS (UC-EDR-004), borrado de shadow copies T1490 (UC-EDR-007) y detención de EDR T1562.001 (UC-EDR-011)",
+      "asset_criticality": "FS01 es servidor de ficheros de criticality Alta que almacena Finanzas, Compras y Personas (evt EDR-0123415/0123416)",
+      "confirmed_execution_or_access": "Beacon Cobalt Strike confirmado en sandbox (evt EDR-0123414 svchelper.exe en FS01; EDR-0123435 spoolhlp.exe en PRINT01) y C2 a 107.174.115.43 (FW-0025180)",
+      "privileged_or_vip": "adm.aortega es cuenta privilegiada (admin, FIDO2) usada desde un puesto de trabajo ajeno a JUMP01; añadió svc_print_upd a Domain Admins (ADE-0000571)",
+      "blocked_before_effect": "EDR bloqueó el borrado de shadow copies en FS01 (evt EDR-0123415, edr_action=blocked) y la detención del agente EDR en PRINT01",
+      "authorized_flow": "Ninguna alerta cubierta por cambio aprobado; adm.aortega no puede usarse desde fuera de JUMP01 (regla de empresa)"
+    }
+  },
+  "affected": {},
+  "summary": "Cadena de ataque real y confirmada de Cobalt Strike (Latrodectus) iniciada en WS-BCN-1770 con marta.puig como punto de entrada (adjunto malicioso → script → descarga de aplihartom.com → beacon → LSASS → C2 en 107.174.115.43). Desde ese equipo se ejecutó movimiento lateral con la cuenta adm.aortega (PsExec desde WS-BCN-1770, IP 10.10.3.95, fuera de JUMP01) a FS01 y PRINT01, con borrado de shadow copies en FS01 (bloqueado por EDR) y detención del agente EDR en PRINT01. El 18-oct adm.aortega añadió svc_print_upd al grupo Domain Admins. No hay cambio aprobado que lo autorice.",
+  "evidence": [],
+  "enrichment": [],
+  "mitre": [],
+  "recommended_actions": [],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": true,
+    "to": "N2 de guardia (telefono)",
+    "reason": "true_positive de severidad critical; ejecucion/robo de credenciales/persistencia; cadena de ataque"
+  },
+  "open_questions": [],
+  "triage_seconds": 33.2,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261009-011790",
+      "created_at": "2026-10-09T09:08:48.000Z",
+      "rule_id": "UC-EML-002",
+      "rule_name": "Adjunto potencialmente malicioso entregado",
+      "severity": "medium",
+      "source_product": "EMAIL_GW"
+    },
+    {
+      "alert_id": "ALR-20261009-011791",
+      "created_at": "2026-10-09T09:31:10.000Z",
+      "rule_id": "UC-EDR-001",
+      "rule_name": "Proceso hijo sospechoso de Office o intérprete de scripts",
+      "severity": "high",
+      "source_product": "EDR"
+    },
+    {
+      "alert_id": "ALR-20261009-011792",
+      "created_at": "2026-10-09T11:32:15.000Z",
+      "rule_id": "UC-NET-001",
+      "rule_name": "Beaconing a dominio poco frecuente",
+      "severity": "medium",
+      "source_product": "PROXY"
+    },
+    {
+      "alert_id": "ALR-20261009-011793",
+      "created_at": "2026-10-09T13:06:11.000Z",
+      "rule_id": "UC-NET-002",
+      "rule_name": "Conexión a IP en lista de bloqueo de TI",
+      "severity": "high",
+      "source_product": "NGFW"
+    },
+    {
+      "alert_id": "ALR-20261010-011794",
+      "created_at": "2026-10-10T00:16:58.000Z",
+      "rule_id": "UC-EDR-008",
+      "rule_name": "Comandos de reconocimiento de dominio",
+      "severity": "medium",
+      "source_product": "EDR"
+    },
+    {
+      "alert_id": "ALR-20261010-011795",
+      "created_at": "2026-10-10T00:23:30.000Z",
+      "rule_id": "UC-EDR-004",
+      "rule_name": "Acceso a la memoria de LSASS",
+      "severity": "critical",
+      "source_product": "EDR"
+    },
+    {
+      "alert_id": "ALR-20261010-011796",
+      "created_at": "2026-10-10T00:32:09.000Z",
+      "rule_id": "UC-NET-003",
+      "rule_name": "Escaneo de puertos interno",
+      "severity": "medium",
+      "source_product": "NGFW"
+    },
+    {
+      "alert_id": "ALR-20261010-011797",
+      "created_at": "2026-10-10T00:42:37.000Z",
+      "rule_id": "UC-NET-004",
+      "rule_name": "Movimiento lateral SMB/RDP/PsExec",
+      "severity": "high",
+      "source_product": "NGFW"
+    },
+    {
+      "alert_id": "ALR-20261010-011798",
+      "created_at": "2026-10-10T01:05:36.000Z",
+      "rule_id": "UC-EDR-007",
+      "rule_name": "Borrado de instantáneas de volumen",
+      "severity": "critical",
+      "source_product": "EDR"
+    },
+    {
+      "alert_id": "ALR-20261018-011895",
+      "created_at": "2026-10-18T01:16:59.000Z",
+      "rule_id": "UC-IDP-008",
+      "rule_name": "Alta en grupo privilegiado del directorio activo",
+      "severity": "high",
+      "source_product": "AD"
+    },
+    {
+      "alert_id": "ALR-20261018-011896",
+      "created_at": "2026-10-18T01:22:06.000Z",
+      "rule_id": "UC-EDR-011",
+      "rule_name": "Manipulación o detención del agente EDR",
+      "severity": "critical",
+      "source_product": "EDR"
+    }
+  ],
+  "first_alert_at": "2026-10-09T09:08:48.000Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261009-011791"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261009-011791\", \"created_at\": \"2026-10-09T09:31:10.000Z\", \"source_product\": \"EDR\", \"rule_id\": \"UC-EDR-001\", \"rule_name\": \"Proceso hijo sospechoso de Office o intérprete de scripts\", \"severity\": \"high\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Execution\", \"technique_id\": \"T1204.002\", \"technique\": \"Malicious File\"}, \"description\": \"Word, Excel, wscript o mshta lanzan un proceso inusual.\", \"entities\": {\"users\": [{\"upn\": \"marta.puig@tarvia.example\", \"display_name\": \"Marta Puig\"}], \"hosts\": [{\"hostname\": \"WS-BCN-1770\", \"ip\": \"10.10.3.95\"}], \"processes\": [{\"n"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261010-011795"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261010-011795\", \"created_at\": \"2026-10-10T00:23:30.000Z\", \"source_product\": \"EDR\", \"rule_id\": \"UC-EDR-004\", \"rule_name\": \"Acceso a la memoria de LSASS\", \"severity\": \"critical\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Credential Access\", \"technique_id\": \"T1003.001\", \"technique\": \"LSASS Memory\"}, \"description\": \"Un proceso no habitual lee la memoria de lsass.exe.\", \"entities\": {\"hosts\": [{\"hostname\": \"WS-BCN-1770\", \"ip\": \"10.10.3.95\"}], \"users\": [{\"upn\": \"marta.puig@tarvia.example\", \"display_name\": \"Marta Puig\"}], \"processes\": [{\"name\": \"rundll32.exe\", \""
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261010-011798"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261010-011798\", \"created_at\": \"2026-10-10T01:05:36.000Z\", \"source_product\": \"EDR\", \"rule_id\": \"UC-EDR-007\", \"rule_name\": \"Borrado de instantáneas de volumen\", \"severity\": \"critical\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Impact\", \"technique_id\": \"T1490\", \"technique\": \"Inhibit System Recovery\"}, \"description\": \"vssadmin, wmic o PowerShell eliminando shadow copies.\", \"entities\": {\"hosts\": [{\"hostname\": \"FS01\", \"ip\": \"10.20.2.20\"}], \"users\": [{\"upn\": \"adm.aortega@tarvia.example\", \"display_name\": \"Alba Ortega (ADM)\"}], \"processes\": [{\"name\": \"vssadmin.ex"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261009-011793"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261009-011793\", \"created_at\": \"2026-10-09T13:06:11.000Z\", \"source_product\": \"NGFW\", \"rule_id\": \"UC-NET-002\", \"rule_name\": \"Conexión a IP en lista de bloqueo de TI\", \"severity\": \"high\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Command and Control\", \"technique_id\": \"T1071\", \"technique\": \"Application Layer Protocol\"}, \"description\": \"Tráfico saliente hacia un indicador presente en la inteligencia de amenazas.\", \"entities\": {\"hosts\": [{\"hostname\": \"WS-BCN-1770\", \"ip\": \"10.10.3.95\"}], \"ips\": [\"107.174.115.43\"]}, \"evidence\": {\"dst_ip\": \"107.174.115.43\", \"dst_"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261018-011896"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261018-011896\", \"created_at\": \"2026-10-18T01:22:06.000Z\", \"source_product\": \"EDR\", \"rule_id\": \"UC-EDR-011\", \"rule_name\": \"Manipulación o detención del agente EDR\", \"severity\": \"critical\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Defense Evasion\", \"technique_id\": \"T1562.001\", \"technique\": \"Disable or Modify Tools\"}, \"description\": \"El agente EDR se detiene, se desinstala o pierde la telemetría de forma inesperada.\", \"entities\": {\"hosts\": [{\"hostname\": \"PRINT01\", \"ip\": \"10.20.6.63\"}], \"processes\": [{\"name\": \"sc.exe\", \"command_line\": \"sc.exe stop EDRAgentS"
+    },
+    {
+      "tool": "search_changes",
+      "args": {
+        "q": ""
+      },
+      "result": "{\"status\": 200, \"body\": [{\"id\": \"CHG-2026-1042\", \"titulo\": \"Pentest externo de la tienda online\", \"inicio\": \"2026-10-08 08:00\", \"fin\": \"2026-10-10 18:00\", \"solicitante\": \"Auditora externa\", \"detalle\": \"IPs origen 192.0.2.10-12; alcance www.tarvia.example y api; sin DoS\", \"alcance\": \"WEB-ECOM01..04\"}, {\"id\": \"CHG-2026-1049\", \"titulo\": \"Escaneo semanal de vulnerabilidades\", \"inicio\": \"2026-10-07 01:00\", \"fin\": \"2026-10-07 05:00\", \"solicitante\": \"Ciberseguridad\", \"detalle\": \"Origen NESSUS01 (svc_scanner); se repite cada miércoles\", \"alcance\": \"Todas las redes salvo OT\"}, {\"id\": \"CHG-2026-1050\", \""
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261010-011797"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261010-011797\", \"created_at\": \"2026-10-10T00:42:37.000Z\", \"source_product\": \"NGFW\", \"rule_id\": \"UC-NET-004\", \"rule_name\": \"Movimiento lateral SMB/RDP/PsExec\", \"severity\": \"high\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Lateral Movement\", \"technique_id\": \"T1021.002\", \"technique\": \"SMB/Windows Admin Shares\"}, \"description\": \"Conexión administrativa entre equipos que no suelen comunicarse.\", \"entities\": {\"hosts\": [{\"hostname\": \"WS-BCN-1770\", \"ip\": \"10.10.3.95\"}, {\"hostname\": \"FS01\", \"ip\": \"10.20.2.20\"}], \"users\": [{\"upn\": \"adm.aortega@tarvia.example\", \"di"
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "WS-BCN-1770"
+      },
+      "result": "{\"status\": 200, \"body\": {\"asset_id\": \"A00770\", \"hostname\": \"WS-BCN-1770\", \"ip\": \"10.10.3.95\", \"type\": \"Portátil\", \"os\": \"Windows 11 23H2\", \"criticality\": \"Media\", \"zone\": \"HQ-USERS\", \"location\": \"Barcelona HQ\", \"business_service\": \"Puesto de trabajo\", \"owner_upn\": \"marta.puig@tarvia.example\", \"internet_facing\": \"False\", \"edr_installed\": \"True\", \"description\": \"\", \"vulnerabilities\": []}}"
+    },
+    {
+      "tool": "get_user",
+      "args": {
+        "key": "adm.aortega@tarvia.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"user_id\": \"U1443A\", \"username\": \"adm.aortega\", \"upn\": \"adm.aortega@tarvia.example\", \"display_name\": \"Alba Ortega (ADM)\", \"department\": \"Tecnología\", \"title\": \"Ingeniero Cloud\", \"location\": \"Barcelona HQ\", \"manager_upn\": \"neus.puig@tarvia.example\", \"account_type\": \"admin\", \"privileged\": \"True\", \"vip\": \"False\", \"mfa_method\": \"fido2\", \"status\": \"active\", \"created\": \"2019-03-01\", \"workstation\": \"\", \"notes\": \"Cuenta privilegiada de Alba Ortega. Solo debe usarse desde JUMP01.\", \"hr_events\": []}}"
+    },
+    {
+      "tool": "get_user",
+      "args": {
+        "key": "marta.puig@tarvia.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"user_id\": \"U1770\", \"username\": \"marta.puig\", \"upn\": \"marta.puig@tarvia.example\", \"display_name\": \"Marta Puig\", \"department\": \"Compras\", \"title\": \"Compradora Senior\", \"location\": \"Barcelona HQ\", \"manager_upn\": \"andrea.lozano2@tarvia.example\", \"account_type\": \"user\", \"privileged\": \"False\", \"vip\": \"False\", \"mfa_method\": \"push\", \"status\": \"active\", \"created\": \"2019-03-01\", \"workstation\": \"WS-BCN-1770\", \"notes\": \"\", \"hr_events\": []}}"
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "70aa203e2e17260ab3f760a84404b9c9ace4397d7d0b8e4713534f40b1353c44"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"70aa203e2e17260ab3f760a84404b9c9ace4397d7d0b8e4713534f40b1353c44\", \"tip\": null, \"geo\": null}}"
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "PRINT01"
+      },
+      "result": "{\"status\": 200, \"body\": {\"asset_id\": \"A01165\", \"hostname\": \"PRINT01\", \"ip\": \"10.20.6.63\", \"type\": \"Servidor de impresión\", \"os\": \"Windows Server 2016\", \"criticality\": \"Baja\", \"zone\": \"DC-SERVERS\", \"location\": \"CPD Barcelona\", \"business_service\": \"Impresión\", \"owner_upn\": \"\", \"internet_facing\": \"False\", \"edr_installed\": \"True\", \"description\": \"\", \"vulnerabilities\": [{\"hostname\": \"PRINT01\", \"id\": \"CVE-2021-34527\", \"producto\": \"Windows Print Spooler\", \"severidad_cvss\": \"8.8\", \"estado\": \"corregida\", \"detectada\": \"2021-07-02\", \"notas\": \"PrintNightmare: parcheado.\"}]}}"
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "aplihartom.com"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"aplihartom.com\", \"tip\": {\"indicator_type\": \"domain\", \"value\": \"aplihartom.com\", \"reputation\": \"malicious\", \"confidence\": 85, \"malware_family\": \"Latrodectus\", \"tags\": \"c2,loader\", \"first_seen\": \"2026-10-03\", \"last_seen\": \"2026-10-15\", \"source\": \"Tarvia TIP (alimentado con feeds públicos)\", \"note\": \"\"}, \"geo\": null}}"
+    },
+    {
+      "tool": "get_asset",
+      "args": {
+        "key": "FS01"
+      },
+      "result": "{\"status\": 200, \"body\": {\"asset_id\": \"A01156\", \"hostname\": \"FS01\", \"ip\": \"10.20.2.20\", \"type\": \"Servidor de ficheros\", \"os\": \"Windows Server 2019\", \"criticality\": \"Alta\", \"zone\": \"DC-SERVERS\", \"location\": \"CPD Barcelona\", \"business_service\": \"Unidades compartidas (Finanzas, Compras, Personas)\", \"owner_upn\": \"\", \"internet_facing\": \"False\", \"edr_installed\": \"True\", \"description\": \"\", \"vulnerabilities\": [{\"hostname\": \"FS01\", \"id\": \"CVE-2024-38063\", \"producto\": \"Windows TCP/IP (IPv6)\", \"severidad_cvss\": \"9.8\", \"estado\": \"abierta\", \"detectada\": \"2026-08-20\", \"notas\": \"Mitigado deshabilitando IPv6; "
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "6f395de68a4888c4f7ac579e3a8a844f4b1dd89db7b97274ca346af0ac67b466"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"6f395de68a4888c4f7ac579e3a8a844f4b1dd89db7b97274ca346af0ac67b466\", \"tip\": null, \"geo\": null}}"
+    },
+    {
+      "tool": "get_sandbox",
+      "args": {
+        "sha256": "70aa203e2e17260ab3f760a84404b9c9ace4397d7d0b8e4713534f40b1353c44"
+      },
+      "result": "{\"status\": 200, \"body\": {\"sha256\": \"70aa203e2e17260ab3f760a84404b9c9ace4397d7d0b8e4713534f40b1353c44\", \"md5\": \"6c947bfa2388d0f97062d290e37ae8c4\", \"file_name\": \"svchelper.exe\", \"verdict\": \"malicious\", \"score\": 100, \"malware_family\": \"Cobalt Strike Beacon\", \"behaviors\": [\"Config de beacon extraída (watermark 987654321)\", \"Inyección en procesos\", \"Named pipe \\\\\\\\.\\\\pipe\\\\MSSE-1234-server\"], \"network\": {\"ips\": [\"107.174.115.43\"]}, \"mitre\": [\"T1055\", \"T1071.001\", \"T1570\"], \"dropped_files\": [], \"analysis_env\": \"Windows 10 x64 (sandbox simulada)\", \"analyzed_at\": \"2026-10-18T09:00:00Z\", \"note\": \"\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "adm.aortega OR \"marta.puig\"",
+        "desde": "2026-10-09T00:00:00Z",
+        "hasta": "2026-10-10T02:00:00Z"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"SIGN-0083867\", \"timestamp\": \"2026-10-10T00:40:00.000Z\", \"user_upn\": \"adm.aortega@tarvia.example\", \"app\": \"Windows (Kerberos)\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"fido2\", \"mfa_result\": \"not_applicable\", \"src_ip\": \"10.10.3.95\", \"country\": \"ES\", \"city\": \"Barcelona\", \"asn\": \"interno\", \"user_agent\": \"\", \"device_id\": \"WS-BCN-1770\", \"device_compliant\": true, \"session_id\": \"\", \"risk_level\": \"none\", \"conditional_access\": \"notApplied\"}]}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "edr_events",
+        "q": "svchelper.exe OR spoolhlp.exe OR rundll32 OR wscript OR msiexec",
+        "desde": "2026-10-09T00:00:00Z",
+        "hasta": "2026-10-10T02:00:00Z"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 17, \"truncated\": false, \"items\": [{\"event_id\": \"EDR-0123414\", \"timestamp\": \"2026-10-10T00:40:09.000Z\", \"event_type\": \"process_start\", \"hostname\": \"FS01\", \"user\": \"TARVIA\\\\adm.aortega\", \"process_name\": \"svchelper.exe\", \"process_path\": \"C:\\\\ProgramData\\\\svchelper.exe\", \"command_line\": \"C:\\\\ProgramData\\\\svchelper.exe\", \"parent_name\": \"PSEXESVC.exe\", \"pid\": 6120, \"parent_pid\": 5980, \"sha256\": \"70aa203e2e17260ab3f760a84404b9c9ace4397d7d0b8e4713534f40b1353c44\", \"signer\": \"(sin firma)\", \"integrity\": \"System\", \"details\": {}}, {\"event_id\": \"EDR-0123435\", \"timestamp\": \""
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_audit",
+        "q": "adm.aortega OR \"svc_print_upd\" OR \"grupo privilegiado\"",
+        "desde": "2026-10-17T00:00:00Z",
+        "hasta": "2026-10-18T03:00:00Z"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": []}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "ad_events",
+        "q": "adm.aortega svc_print_upd PRINT01 grupo",
+        "desde": "2026-10-17T00:00:00Z",
+        "hasta": "2026-10-18T03:00:00Z"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"ADE-0000571\", \"timestamp\": \"2026-10-18T01:13:00.000Z\", \"dc\": \"DC01\", \"event_code\": 4728, \"event\": \"Se agregó un miembro a un grupo global con seguridad habilitada\", \"subject\": \"adm.aortega\", \"target\": \"svc_print_upd\", \"src_host\": \"PRINT01\", \"details\": {\"group\": \"Domain Admins\"}}], \"query_note\": \"AND de ['adm.aortega', 'svc_print_upd', 'PRINT01', 'grupo']: se buscó 'grupo' y se filtró por el resto\"}}"
+    }
+  ],
+  "status": "open",
+  "usage": {
+    "input_tokens": 47451,
+    "output_tokens": 2012,
+    "steps": 3,
+    "llm_seconds": [
+      6.1,
+      2.8,
+      11.4
+    ],
+    "tools_seconds": 8.6,
+    "prefetch_seconds": 4.1,
+    "llm_seconds_total": 20.3
+  },
+  "model": "ornith",
+  "group": {
+    "grupo_id": "GRP-ALR-20261009-011790",
+    "uniones": [
+      {
+        "de": "ALR-20261009-011793",
+        "a": "ALR-20261010-011794",
+        "entidad": "ip:10.10.3.95",
+        "motivo": "comparten la IP 10.10.3.95 (11 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261010-011794",
+        "a": "ALR-20261010-011795",
+        "entidad": "ip:10.10.3.95",
+        "motivo": "comparten la IP 10.10.3.95 (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261010-011795",
+        "a": "ALR-20261010-011796",
+        "entidad": "ip:10.10.3.95",
+        "motivo": "comparten la IP 10.10.3.95 (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261010-011796",
+        "a": "ALR-20261010-011797",
+        "entidad": "ip:10.10.3.95",
+        "motivo": "comparten la IP 10.10.3.95 (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261009-011790",
+        "a": "ALR-20261010-011794",
+        "entidad": "user:marta.puig@tarvia.example",
+        "motivo": "comparten el usuario marta.puig@tarvia.example (15 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261009-011790",
+        "a": "ALR-20261009-011791",
+        "entidad": "hash:6f395de68a4888c4f7ac579e3a8a844f4b1dd89db7b97274ca346af0ac67b466",
+        "motivo": "comparten el hash 6f395de68a48… (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261009-011791",
+        "a": "ALR-20261009-011792",
+        "entidad": "dom:aplihartom.com",
+        "motivo": "comparten el dominio aplihartom.com (2 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261010-011797",
+        "a": "ALR-20261010-011798",
+        "entidad": "ip:10.20.2.20",
+        "motivo": "comparten la IP 10.20.2.20 (0 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261010-011797",
+        "a": "ALR-20261018-011896",
+        "entidad": "hash:70aa203e2e17260ab3f760a84404b9c9ace4397d7d0b8e4713534f40b1353c44",
+        "motivo": "comparten el hash 70aa203e2e17… (193 h entre una y otra)"
+      },
+      {
+        "de": "ALR-20261018-011895",
+        "a": "ALR-20261018-011896",
+        "entidad": "ip:10.20.6.63",
+        "motivo": "comparten la IP 10.20.6.63 (0 h entre una y otra)"
+      }
+    ],
+    "entidades_clave": [
+      "ip:10.10.3.95",
+      "host:WS-BCN-1770",
+      "user:marta.puig@tarvia.example",
+      "user:adm.aortega@tarvia.example",
+      "hash:6f395de68a4888c4f7ac579e3a8a844f4b1dd89db7b97274ca346af0ac67b466",
+      "dom:aplihartom.com",
+      "ip:10.20.2.20",
+      "hash:70aa203e2e17260ab3f760a84404b9c9ace4397d7d0b8e4713534f40b1353c44"
+    ],
+    "reglas": {
+      "UC-EML-002": 1,
+      "UC-EDR-001": 1,
+      "UC-NET-001": 1,
+      "UC-NET-002": 1,
+      "UC-EDR-008": 1,
+      "UC-EDR-004": 1,
+      "UC-NET-003": 1,
+      "UC-NET-004": 1,
+      "UC-EDR-007": 1,
+      "UC-IDP-008": 1,
+      "UC-EDR-011": 1
+    }
+  },
+  "prefilter": {
+    "ALR-20261009-011790": {
+      "alert_id": "ALR-20261009-011790",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261009-011791": {
+      "alert_id": "ALR-20261009-011791",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261009-011792": {
+      "alert_id": "ALR-20261009-011792",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261009-011793": {
+      "alert_id": "ALR-20261009-011793",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261010-011794": {
+      "alert_id": "ALR-20261010-011794",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261010-011795": {
+      "alert_id": "ALR-20261010-011795",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261010-011796": {
+      "alert_id": "ALR-20261010-011796",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261010-011797": {
+      "alert_id": "ALR-20261010-011797",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261010-011798": {
+      "alert_id": "ALR-20261010-011798",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1042 (Pentest externo de la tienda online), pero no encaja en origen, hora o alcance",
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261018-011895": {
+      "alert_id": "ALR-20261018-011895",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    },
+    "ALR-20261018-011896": {
+      "alert_id": "ALR-20261018-011896",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    }
+  }
+}

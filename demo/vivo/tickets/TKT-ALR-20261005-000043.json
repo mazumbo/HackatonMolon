@@ -1,0 +1,236 @@
+{
+  "ticket_id": "TKT-ALR-20261005-000043",
+  "alert_ids": [
+    "ALR-20261005-000043"
+  ],
+  "title": "Viaje imposible: falso positivo por Private Relay del móvil",
+  "verdict": "false_positive",
+  "confidence": 0.9,
+  "severity": "informational",
+  "severity_rationale": "Regla medium (UC-IDP-001) x criticidad media (usuario javier.sanz@tarvia.example) = medium. final medium. Hechos: criticidad: La cuenta es de un especialista CRM no privilegiado ni VIP; no se pudo determinar criticidad de activo por ser acceso a SaaS (Office 365/Teams). Falso positivo (sin ataque): severidad informational en lugar de medium.",
+  "severity_factors": {
+    "rule_severity": "medium",
+    "asset_criticality": "unknown",
+    "confirmed_execution_or_access": false,
+    "privileged_or_vip": false,
+    "personal_or_payment_data": false,
+    "blocked_before_effect": false,
+    "authorized_flow": false,
+    "factor_evidence": {
+      "rule_severity": "Regla UC-IDP-001 'Viaje imposible' con severidad medium por dos inicios de sesión en ubicaciones incompatibles (evt SIGN-0003549, SIGN-0003550)",
+      "asset_criticality": "La cuenta es de un especialista CRM no privilegiado ni VIP; no se pudo determinar criticidad de activo por ser acceso a SaaS (Office 365/Teams)"
+    }
+  },
+  "affected": {},
+  "summary": "La regla UC-IDP-001 detectó dos inicios de sesión exitosos de Javier Sanz desde Barcelona (198.18.200.10) y Dublín (198.18.10.185) con menos de 30 min entre ellos. El segundo evento (SIGN-0003550) corresponde a un login desde un iPhone con salida de Microsoft Private Relay (ASN AS8075, IP de hosting en Irlanda), un servicio legítimo de privacidad de Apple que reutiliza la misma IP de salida para múltiples usuarios. No existe ataque: el dispositivo es un móvil corporativo conocido y conforme, con MFA TOTP satisfactoria, y es el único login desde Irlanda de este usuario en todo el período. La IP de Dublín aparece en decenas de otros usuarios de la empresa en la misma ventana, confirmando que es una salida compartida del servicio, no acceso malicioso.",
+  "evidence": [
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003549",
+      "finding": "Login exitoso de Javier Sanz desde 198.18.200.10 (Barcelona, AS64610) a las 06:30:52 UTC, app Microsoft Teams, dispositivo dev-54e5c389 (PC Windows), MFA TOTP satisfactoria, device compliant, risk none."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003550",
+      "finding": "Login exitoso de Javier Sanz desde 198.18.10.185 (Dublín, Irlanda, AS8075) a las 06:35:52 UTC, app Office 365 Exchange Online, dispositivo mob-28a90bad (iPhone Outlook-iOS), MFA TOTP satisfied_by_session, device compliant, risk low. 5 min tras el login de Barcelona."
+    },
+    {
+      "source": "get_intel",
+      "event_id": "198.18.10.185",
+      "finding": "La IP 198.18.10.185 (Dublín) pertenece al ASN AS8075 (Microsoft), clasificada como hosting y salida de Private Relay/VPN del móvil según el TIP interno; no es proxy residencial ni Tor."
+    },
+    {
+      "source": "search_logs",
+      "event_id": "idp_signins",
+      "finding": "La IP 198.18.10.185 y el ASN AS8075 aparecen en decenas de inicios de sesión de otros usuarios distintos (ruben.marti, hugo.coll, etc.) en la misma ventana temporal del 5-oct, confirmando que es una salida compartida del servicio de privacidad de Apple, no un acceso dirigido a este usuario."
+    },
+    {
+      "source": "search_logs",
+      "event_id": "idp_signins",
+      "finding": "El dispositivo móvil mob-28a90bad es el único login desde Irlanda de Javier Sanz en todo el período investigado (sept-oct); el resto de sus sesiones provienen de IPs españolas (198.18.200.10/11) sin indicios de anomalía."
+    }
+  ],
+  "enrichment": [
+    {
+      "indicator": "198.18.10.185",
+      "type": "ip",
+      "source": "get_intel",
+      "result": "ASN AS8075 (Microsoft), hosting, salida de Microsoft Private Relay/VPN del móvil; no Tor, no proxy residencial."
+    },
+    {
+      "indicator": "198.18.200.10",
+      "type": "ip",
+      "source": "get_intel",
+      "result": "ASN AS12479 (Orange Espagne), Madrid, ES; no threat, no VPN/proxy."
+    }
+  ],
+  "mitre": [],
+  "recommended_actions": [
+    {
+      "action": "Cerrar la alerta como falso positivo; la actividad corresponde a una salida legítima de Microsoft Private Relay desde un móvil corporativo conforme, sin evidencia de ataque.",
+      "target": "ALR-20261005-000043",
+      "justification": "El segundo login se explica por un servicio de privacidad de Apple (ASN ajeno compartido por múltiples usuarios), no por acceso malicioso.",
+      "requires_approval": false
+    },
+    {
+      "action": "Revisar el umbral de la regla UC-IDP-001 para excluir IPs de salida de Private Relay/VPN conocidas (ASN AS8075) de la detección de viajes imposibles.",
+      "target": "Regla de detección UC-IDP-001",
+      "justification": "Evita falsos positivos recurrentes generados por las salidas compartidas de Private Relay.",
+      "requires_approval": false
+    }
+  ],
+  "executed_actions": [],
+  "escalation": {
+    "escalate": false,
+    "to": "",
+    "reason": ""
+  },
+  "open_questions": [
+    "Confirmar con el analista N2 si el dispositivo mob-28a90bad está registrado como dispositivo confiable del usuario en Intune.",
+    "Verificar si existen sesiones posteriores (post-06:35 UTC del 5-oct) desde la misma IP 198.18.10.185 que indiquen uso prolongado del servicio."
+  ],
+  "triage_seconds": 38.9,
+  "alerts": [
+    {
+      "alert_id": "ALR-20261005-000043",
+      "created_at": "2026-10-05T06:58:19.163Z",
+      "rule_id": "UC-IDP-001",
+      "rule_name": "Viaje imposible",
+      "severity": "medium",
+      "source_product": "IDP"
+    }
+  ],
+  "first_alert_at": "2026-10-05T06:58:19.163Z",
+  "prompt_injection": [],
+  "devils_advocate": "",
+  "tool_trace": [
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "198.18.200.10"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"198.18.200.10\", \"tip\": null, \"geo\": {\"ip\": \"198.18.200.10\", \"country\": \"ES\", \"city\": \"Madrid\", \"asn\": \"AS12479\", \"as_org\": \"Orange Espagne\", \"is_tor\": \"False\", \"is_vpn_provider\": \"False\", \"is_hosting\": \"False\", \"is_residential_proxy\": \"False\"}}}"
+    },
+    {
+      "tool": "get_alert",
+      "args": {
+        "alert_id": "ALR-20261005-000043"
+      },
+      "result": "{\"status\": 200, \"body\": {\"alert_id\": \"ALR-20261005-000043\", \"created_at\": \"2026-10-05T06:58:19.163Z\", \"source_product\": \"IDP\", \"rule_id\": \"UC-IDP-001\", \"rule_name\": \"Viaje imposible\", \"severity\": \"medium\", \"status\": \"new\", \"mitre\": {\"tactic\": \"Initial Access\", \"technique_id\": \"T1078\", \"technique\": \"Valid Accounts\"}, \"description\": \"Dos inicios de sesión exitosos desde ubicaciones incompatibles en el tiempo transcurrido.\", \"entities\": {\"users\": [{\"upn\": \"javier.sanz@tarvia.example\", \"display_name\": \"Javier Sanz\"}], \"ips\": [\"198.18.200.10\", \"198.18.10.185\"]}, \"evidence\": {\"previous_login\": {\"cit"
+    },
+    {
+      "tool": "get_user",
+      "args": {
+        "key": "javier.sanz@tarvia.example"
+      },
+      "result": "{\"status\": 200, \"body\": {\"user_id\": \"U1214\", \"username\": \"javier.sanz\", \"upn\": \"javier.sanz@tarvia.example\", \"display_name\": \"Javier Sanz\", \"department\": \"Marketing\", \"title\": \"Especialista CRM\", \"location\": \"Barcelona HQ\", \"manager_upn\": \"ruben.castro@tarvia.example\", \"account_type\": \"user\", \"privileged\": \"False\", \"vip\": \"False\", \"mfa_method\": \"totp\", \"status\": \"active\", \"created\": \"2019-03-01\", \"workstation\": \"WS-BCN-1214\", \"notes\": \"\", \"hr_events\": []}}"
+    },
+    {
+      "tool": "get_intel",
+      "args": {
+        "indicator": "198.18.10.185"
+      },
+      "result": "{\"status\": 200, \"body\": {\"indicator\": \"198.18.10.185\", \"tip\": null, \"geo\": {\"ip\": \"198.18.10.185\", \"country\": \"IE\", \"city\": \"Dublín\", \"asn\": \"AS8075\", \"as_org\": \"Microsoft (salida de Private Relay/VPN del móvil, simulado)\", \"is_tor\": \"False\", \"is_vpn_provider\": \"False\", \"is_hosting\": \"True\", \"is_residential_proxy\": \"False\"}}}"
+    },
+    {
+      "tool": "search_changes",
+      "args": {
+        "q": ""
+      },
+      "result": "{\"status\": 200, \"body\": [{\"id\": \"CHG-2026-1042\", \"titulo\": \"Pentest externo de la tienda online\", \"inicio\": \"2026-10-08 08:00\", \"fin\": \"2026-10-10 18:00\", \"solicitante\": \"Auditora externa\", \"detalle\": \"IPs origen 192.0.2.10-12; alcance www.tarvia.example y api; sin DoS\", \"alcance\": \"WEB-ECOM01..04\"}, {\"id\": \"CHG-2026-1049\", \"titulo\": \"Escaneo semanal de vulnerabilidades\", \"inicio\": \"2026-10-07 01:00\", \"fin\": \"2026-10-07 05:00\", \"solicitante\": \"Ciberseguridad\", \"detalle\": \"Origen NESSUS01 (svc_scanner); se repite cada miércoles\", \"alcance\": \"Todas las redes salvo OT\"}, {\"id\": \"CHG-2026-1050\", \""
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "SIGN-0003549 SIGN-0003550"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 0, \"truncated\": false, \"items\": [], \"query_note\": \"AND de ['SIGN-0003549', 'SIGN-0003550']: se buscó 'SIGN-0003549' y se filtró por el resto\"}}"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "javier.sanz"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 153, \"truncated\": false, \"items\": [{\"event_id\": \"SIGN-0003549\", \"timestamp\": \"2026-10-05T06:30:52.163Z\", \"user_upn\": \"javier.sanz@tarvia.example\", \"app\": \"Microsoft Teams\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"totp\", \"mfa_result\": \"satisfied_by_session\", \"src_ip\": \"198.18.200.10\", \"country\": \"ES\", \"city\": \"Barcelona\", \"asn\": \"AS64610\", \"user_agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0\", \"device_id\": \"dev-54e5c389\", \"device_compliant\": true, \"session_"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "SIGN-0003550"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"SIGN-0003550\", \"timestamp\": \"2026-10-05T06:35:52.163Z\", \"user_upn\": \"javier.sanz@tarvia.example\", \"app\": \"Office 365 Exchange Online\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"totp\", \"mfa_result\": \"satisfied_by_session\", \"src_ip\": \"198.18.10.185\", \"country\": \"IE\", \"city\": \"Dublín\", \"asn\": \"AS8075\", \"user_agent\": \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Outlook-iOS/4.2445\", \"device_id\": \"mob-28a90bad\", \"device_compliant\": true, \""
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "SIGN-0003549"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"SIGN-0003549\", \"timestamp\": \"2026-10-05T06:30:52.163Z\", \"user_upn\": \"javier.sanz@tarvia.example\", \"app\": \"Microsoft Teams\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"totp\", \"mfa_result\": \"satisfied_by_session\", \"src_ip\": \"198.18.200.10\", \"country\": \"ES\", \"city\": \"Barcelona\", \"asn\": \"AS64610\", \"user_agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0\", \"device_id\": \"dev-54e5c389\", \"device_compliant\": true, \"session_id"
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "javier.sanz 198.18.10.185 OR \"Dublín\" OR IE",
+        "desde": "2026-10-01T00:00:00Z",
+        "hasta": "2026-10-06T00:00:00Z"
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 211, \"truncated\": true, \"items\": [{\"event_id\": \"SIGN-0003550\", \"timestamp\": \"2026-10-05T06:35:52.163Z\", \"user_upn\": \"javier.sanz@tarvia.example\", \"app\": \"Office 365 Exchange Online\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"totp\", \"mfa_result\": \"satisfied_by_session\", \"src_ip\": \"198.18.10.185\", \"country\": \"IE\", \"city\": \"Dublín\", \"asn\": \"AS8075\", \"user_agent\": \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Outlook-iOS/4.2445\", \"device_id\": \"mob-28a90bad\", \"device_compliant\": true, "
+    },
+    {
+      "tool": "search_logs",
+      "args": {
+        "source": "idp_signins",
+        "q": "javier.sanz mob-28a90bad",
+        "desde": "2026-09-01T00:00:00Z",
+        "hasta": "2026-10-05T07:00:00Z",
+        "limit": 50
+      },
+      "result": "{\"status\": 200, \"body\": {\"count\": 1, \"truncated\": false, \"items\": [{\"event_id\": \"SIGN-0003550\", \"timestamp\": \"2026-10-05T06:35:52.163Z\", \"user_upn\": \"javier.sanz@tarvia.example\", \"app\": \"Office 365 Exchange Online\", \"result\": \"success\", \"failure_reason\": \"\", \"mfa_method\": \"totp\", \"mfa_result\": \"satisfied_by_session\", \"src_ip\": \"198.18.10.185\", \"country\": \"IE\", \"city\": \"Dublín\", \"asn\": \"AS8075\", \"user_agent\": \"Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Outlook-iOS/4.2445\", \"device_id\": \"mob-28a90bad\", \"device_compliant\": true, \""
+    }
+  ],
+  "status": "closed",
+  "usage": {
+    "input_tokens": 56220,
+    "output_tokens": 1971,
+    "steps": 6,
+    "llm_seconds": [
+      1.7,
+      1.4,
+      2.2,
+      2.7,
+      2.5,
+      12.8
+    ],
+    "tools_seconds": 13.5,
+    "prefetch_seconds": 2.0,
+    "llm_seconds_total": 23.3
+  },
+  "model": "ornith",
+  "group": {
+    "grupo_id": "GRP-ALR-20261005-000043",
+    "uniones": [],
+    "entidades_clave": [],
+    "reglas": {
+      "UC-IDP-001": 1
+    }
+  },
+  "prefilter": {
+    "ALR-20261005-000043": {
+      "alert_id": "ALR-20261005-000043",
+      "decision": "pasar",
+      "veredicto": null,
+      "severidad": null,
+      "motivo": "",
+      "cambio": null,
+      "pistas": [
+        "cerca de CHG-2026-1031 (Script de inventario de software vía SCCM (PowerShell codificado)), pero no encaja en origen, hora o alcance",
+        "cerca de FLUJO-0007 (Envío mensual de variables de nómina a gestoría), pero no encaja en origen, hora o alcance"
+      ]
+    }
+  }
+}
