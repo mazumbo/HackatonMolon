@@ -35,6 +35,26 @@ Medidos con el modelo `ornith` de la pasarela UAB.
 
 Las horas del turno de noche suponen un humano optimista que atiende la alerta en cuanto abre el turno.
 
+## Qué lo diferencia
+
+- **Turno de noche.** El SOC de Tarvia solo mira la consola de lunes a viernes de 8:00 a 20:00. El 32 % de
+  las alertas (3.503 de 11.061) llega fuera de ese horario, y 8 de los 12 incidentes tienen alguna alerta
+  clave fuera de horario. Medimos cuántas horas esperaría cada una hasta que la viera una persona, frente a
+  menos de un minuto del sistema. Si un ataque tira la venta online en campaña, cada hora cuesta unos
+  120.000 €. Detalle en [`eval/TURNO_NOCHE.md`](eval/TURNO_NOCHE.md).
+- **No cierra ante la duda.** El prefiltro solo cierra lo que puede justificar, y lo "autorizado" solo
+  cuenta si el calendario de cambios lo confirma. Ninguna alerta de los 12 incidentes se cierra por error.
+- **La severidad la decide el código.** Se aplica la matriz de la política. El LLM puede subirla, pero
+  nunca bajarla.
+- **Defensa contra la inyección de prompt.** Los datos del atacante van marcados como datos no fiables,
+  el código detecta los intentos de manipulación y la UI los marca en rojo con el texto escondido.
+- **Una persona aprueba siempre la contención.** El agente solo tiene herramientas de lectura. Bloquear
+  un indicador o purgar un correo también pide aprobación, aunque la política interna no lo exija.
+- **Incidentes, no alertas.** Las alertas relacionadas se agrupan en un solo ticket: las 10 alertas del
+  domingo arrastran 57 alertas del historial y salen en 10 tickets.
+- **Se puede ver el lote entero.** La pestaña Reproducción de la UI repite las 10 alertas oficiales con
+  sus tiempos reales: entrada, prefiltro, agrupación, agente y ticket.
+
 ## Estructura
 
 | Carpeta | Qué hay |
