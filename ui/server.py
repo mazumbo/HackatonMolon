@@ -5,6 +5,7 @@ Sirve la interfaz estática de ui/static y una API pequeña para ella:
     GET  /api/tickets            lista de tickets (con el cálculo del turno de noche)
     GET  /api/tickets/{id}       un ticket
     GET  /api/nightshift         resumen "SOC humano vs IA" por incidente
+    GET  /api/replay             reproducción del lote en vivo (pestaña Reproducción)
     POST /api/approve            aprobación humana -> /approvals + /containment de la API mock
 
 De dónde salen los tickets (variable UI_TICKETS):
@@ -33,6 +34,8 @@ from pydantic import BaseModel
 
 HERE = Path(__file__).resolve().parent
 TICKETS_SRC = Path(os.environ.get("UI_TICKETS", HERE / "data" / "tickets_mock.json"))
+# Reproducción del lote en vivo (pestaña «Reproducción»); se genera con tools/build_replay.py.
+REPLAY_SRC = Path(os.environ.get("UI_REPLAY", HERE / "data" / "replay_vivo.json"))
 SOC_API = os.environ.get("SOC_API_URL", "http://localhost:8000").rstrip("/")
 MADRID = ZoneInfo("Europe/Madrid")
 
@@ -229,6 +232,13 @@ def approve(a: ApproveIn):
         rec["mode"] = "local"
     APPROVALS_LOCAL.append(rec)
     return rec
+
+
+@app.get("/api/replay")
+def replay():
+    if not REPLAY_SRC.exists():
+        raise HTTPException(404, "no hay reproducción: ejecuta ui/tools/build_replay.py")
+    return json.loads(REPLAY_SRC.read_text(encoding="utf-8"))
 
 
 @app.get("/api/approvals")

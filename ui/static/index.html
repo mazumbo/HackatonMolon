@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tarvia SOC · Triaje N1 con IA</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="replay.css?v=3">
 </head>
 <body>
 <header class="top">
@@ -13,6 +14,7 @@
     <button class="tab active" data-view="queue">Cola</button>
     <button class="tab" data-view="night">Turno de noche</button>
     <button class="tab" data-view="limits">Límites</button>
+    <button class="tab" data-view="replay">Reproducción</button>
   </nav>
   <div class="top-right">
     <span id="source" class="muted small"></span>
@@ -60,6 +62,31 @@
       <li><b>OT:</b> el SOC no actúa sobre la red OT; solo escala a Operaciones.</li>
     </ul>
   </section>
+
+  <section id="view-replay" class="view">
+    <div class="rp-bar">
+      <div class="rp-ctl">
+        <button id="rp-play" class="primary">Reproducir</button>
+        <button id="rp-reset" class="ghost">Reiniciar</button>
+        <span class="rp-speed" id="rp-speed">
+          <button class="ghost" data-s="1">1x</button><button class="ghost" data-s="2">2x</button><button class="ghost" data-s="4">4x</button>
+        </span>
+      </div>
+      <div class="rp-clock"><b id="rp-clock">T+00:00</b><span class="muted small" id="rp-phase">Lote del domingo · 10 alertas oficiales</span></div>
+      <div class="rp-progress"><i id="rp-prog"></i></div>
+    </div>
+    <div class="rp-grid" id="rp-grid">
+      <div class="rp-h"><span>1</span>Entrada</div>
+      <div class="rp-h"><span>2</span>Prefiltro</div>
+      <div class="rp-h"><span>3</span>Agrupación en incidentes</div>
+      <div class="rp-h"><span>4</span>Agente · tiempo por alerta</div>
+      <div class="rp-h"><span>5</span>Ticket</div>
+    </div>
+    <div class="rp-foot">
+      <div class="rp-stats" id="rp-stats"></div>
+      <div class="rp-inj" id="rp-inj"></div>
+    </div>
+  </section>
 </main>
 
 <template id="tpl-approve">
@@ -74,6 +101,7 @@
   </dialog>
 </template>
 
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
+<script src="replay.js?v=3"></script>
 </body>
 </html>

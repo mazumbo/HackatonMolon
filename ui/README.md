@@ -37,7 +37,24 @@ Horario del SOC de Tarvia: lunes a viernes de 8:00 a 20:00 (hora de Madrid). Par
 incidente se calcula cuánto esperaría hasta que alguien abra la consola; la cifra del incidente es la
 peor espera. Suposición optimista para el humano: trata la alerta en cuanto empieza el turno.
 
+## Reproducción del lote en vivo
+
+Pestaña **Reproducción** (tecla `4`): reproduce en una pantalla el lote de las 10 alertas oficiales del domingo,
+con los tiempos reales. Cada fila es una alerta: entra, pasa por el prefiltro (que cierra el pentest autorizado y
+el falso túnel DNS de McAfee), se agrupa con su historial en un incidente, el agente la trabaja (la barra es el
+tiempo real de esa alerta, misma escala para todas) y sale el ticket con veredicto y severidad. La alerta con
+prompt injection se marca en rojo y abajo aparece el texto escondido del correo.
+
+Los datos salen de `ui/data/replay_vivo.json`, generado a partir de `demo/vivo` (orden de `vivas.jsonl`,
+hora de escritura de cada ticket y su `triage_seconds`):
+
+```bash
+python ui/tools/build_replay.py            # o: python ui/tools/build_replay.py <carpeta_lote> <salida.json>
+```
+
+Controles: `espacio` reproducir/pausa · `r` reiniciar · `←` `→` 5 s atrás/adelante · 1x/2x/4x. El lote real dura unos 143 s.
+
 ## Atajos para presentar
 
-`j`/`k` o flechas: ticket siguiente/anterior · `1` `2` `3`: pestañas · `p`: modo presentación (letra grande).
+`j`/`k` o flechas: ticket siguiente/anterior · `1` `2` `3` `4`: pestañas · `p`: modo presentación (letra grande).
 Se puede enlazar un ticket directo: `http://localhost:8080/#TKT-INC-10`.
