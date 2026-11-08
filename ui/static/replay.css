@@ -1,0 +1,76 @@
+/* Pestaña «Reproducción»: el lote en vivo, alerta a alerta, con los tiempos reales. */
+body[data-view="replay"] #kpis { display: none; }
+#view-replay.active { display: block; padding-top: 10px; }
+
+.rp-bar { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px 20px; margin-bottom: 8px; }
+.rp-ctl { display: flex; gap: 8px; align-items: center; }
+.rp-speed { display: inline-flex; margin-left: 8px; }
+.rp-speed button { margin-left: -1px; min-width: 40px; }
+.rp-speed button.on { border-color: var(--accent); color: var(--accent); position: relative; z-index: 1; }
+.rp-clock { display: flex; align-items: baseline; gap: 14px; justify-content: flex-end; }
+.rp-clock b { font-size: 26px; font-variant-numeric: tabular-nums; }
+.rp-progress { grid-column: 1 / -1; height: 3px; background: var(--panel-2); }
+.rp-progress i { display: block; height: 100%; width: 0; background: var(--accent-strong); }
+
+.rp-grid { display: grid; grid-template-columns: 360px 230px minmax(250px, 1fr) minmax(250px, 1fr) 380px; border-top: 1px solid var(--line); }
+.rp-h { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--text); }
+.rp-h span { display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; background: var(--text); color: #fff; margin-right: 8px; font-size: 11px; }
+.rp-c { padding: 5px 10px; border-bottom: 1px solid var(--line); min-height: 58px; min-width: 0; font-size: 13px; transition: background-color .4s, opacity .4s; }
+.rp-c + .rp-c { border-left: 1px solid var(--line); }
+.rp-c.wait { opacity: 0; }
+.rp-c.dim { color: var(--muted); }
+.rp-c .l1 { display: flex; gap: 8px; align-items: center; white-space: nowrap; overflow: hidden; }
+.rp-c .l2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+.rp-c .l3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.rp-c .mono { font-size: 12px; }
+.rp-new { background: #f1f8e6; }
+
+/* Prefiltro */
+.rp-pass { color: var(--muted); }
+.rp-closed { border-left: 3px solid var(--accent-strong); padding-left: 8px; }
+.rp-closed b { color: var(--accent); }
+
+/* Agrupación: un cuadrado por alerta del incidente */
+.rp-dots { display: flex; flex-wrap: wrap; gap: 3px; margin: 2px 0 4px; }
+.rp-dots i { width: 11px; height: 11px; background: var(--panel-2); border: 1px solid var(--line); }
+.rp-dots i.on { background: var(--text); border-color: var(--text); }
+.rp-dots i.seed { background: var(--accent-strong); border-color: var(--accent-strong); }
+.rp-ent { display: inline-block; font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); padding: 0 5px; margin-right: 4px; background: #fff; }
+
+/* Agente: la barra es el tiempo real de la alerta, misma escala para todas */
+.rp-track { height: 14px; background: var(--panel-2); position: relative; margin: 4px 0 4px; }
+.rp-track i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent-strong); }
+.rp-track.done i { background: var(--accent); }
+.rp-track.run i { background: repeating-linear-gradient(90deg, var(--accent-strong) 0 8px, #a4cf5c 8px 16px); }
+.rp-secs { font-variant-numeric: tabular-nums; font-weight: 700; }
+.rp-c.agent .l1 { justify-content: space-between; }
+
+/* Fila con prompt injection */
+.rp-c.inj { background: var(--inj-bg); }
+.rp-c.inj:first-child { box-shadow: inset 4px 0 0 var(--inj-line); }
+.rp-injtag { color: #fff; background: var(--inj-line); font-size: 11px; font-weight: 700; padding: 1px 6px; text-transform: uppercase; letter-spacing: .03em; }
+
+/* Ticket */
+.rp-ticket .l2 { font-weight: 600; }
+.rp-esc { color: var(--crit); font-size: 12px; font-weight: 700; }
+
+/* Pie: totales + panel de inyección */
+.rp-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 16px; margin-top: 10px; }
+.rp-stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); align-self: start; }
+.rp-stat { padding: 10px 12px; border-right: 1px solid var(--line); }
+.rp-stat:last-child { border-right: 0; }
+.rp-stat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+.rp-stat span { color: var(--muted); font-size: 12px; }
+.rp-inj:empty { display: none; }
+.rp-inj { border: 2px solid var(--inj-line); background: var(--inj-bg); padding: 10px 14px; }
+.rp-inj h3 { color: var(--inj-line); margin: 0 0 6px; font-size: 14px; }
+.rp-inj blockquote { margin: 6px 0; padding: 8px 10px; font-family: var(--mono); font-size: 12px; background: #fff; border-left: 3px solid var(--inj-line); white-space: pre-wrap; word-break: break-word; }
+.rp-inj blockquote mark { background: var(--inj-line); color: #fff; padding: 0 2px; }
+.rp-inj p { margin: 0; font-size: 13px; }
+
+body.present .rp-c { font-size: 15px; }
+
+@media (max-width: 1300px) {
+  .rp-grid { grid-template-columns: 240px 170px minmax(180px, 1fr) minmax(180px, 1fr) 260px; }
+  .rp-foot { grid-template-columns: 1fr; }
+}

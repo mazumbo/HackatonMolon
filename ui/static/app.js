@@ -342,6 +342,7 @@ function renderNight() {
 function showView(v) {
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.view === v));
   document.querySelectorAll(".view").forEach((s) => s.classList.toggle("active", s.id === "view-" + v));
+  document.body.dataset.view = v;
 }
 
 document.addEventListener("click", (e) => {
@@ -360,7 +361,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "j" || e.key === "ArrowDown") { e.preventDefault(); if (vis[i + 1]) select(vis[i + 1].ticket_id); }
   if (e.key === "k" || e.key === "ArrowUp") { e.preventDefault(); if (vis[i - 1]) select(vis[i - 1].ticket_id); }
   if (e.key === "p") document.body.classList.toggle("present");
-  if (e.key === "1") showView("queue"); if (e.key === "2") showView("night"); if (e.key === "3") showView("limits");
+  if (e.key === "1") showView("queue"); if (e.key === "2") showView("night"); if (e.key === "3") showView("limits"); if (e.key === "4") showView("replay");
 });
 $("#present").onclick = () => document.body.classList.toggle("present");
 load();
