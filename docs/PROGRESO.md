@@ -37,7 +37,7 @@ _Última actualización: 07/11/2026 23:20_
 
 ### A · Datos y motor determinista
 
-- ✅ API mock del reto levantada en local (puerto 8000); `LEVANTAR_API.py` comprueba que responde.
+- ✅ API mock del reto levantada en local (puerto 8000).
 - ✅ `prefiltrar(alerta)` en `engine/prefiltro.py` ([PR #5](https://github.com/mazumbo/HackatonMolon/pull/5)): pentest, Nessus, SCCM y flujos aprobados, con motivo de cierre.
 - ✅ Ataque web bloqueado = `true_positive` informational ([PR #10](https://github.com/mazumbo/HackatonMolon/pull/10)).
 - ✅ Matriz de severidad ([PR #6](https://github.com/mazumbo/HackatonMolon/pull/6), [PR #8](https://github.com/mazumbo/HackatonMolon/pull/8)): regla × criticidad del afectado; lo desconocido cuenta como alta; el LLM puede subir pero nunca bajar.

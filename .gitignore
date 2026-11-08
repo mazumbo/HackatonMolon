@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 containment_log.jsonl
+out/
+.env
+demo/ensayo/
